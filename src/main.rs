@@ -12,14 +12,16 @@ fn main() {
             Box::new(graph::Node::new((4, "4"))),
         ]),
     };
-    let linear_graph = LineGH::new(&["aaa", "bbb", "ccc", "ddd"]).
+    let linear_graph = LineGH::new(&["aaa", "bbb", "ccc", "ddd", "yura", "pohodu", "nado", "idti", "spaty"]).
+        connect(1, 3).
         connect(0, 3).
-        connect(0, 3).
         connect(0, 2).
         connect(0, 2).
-        connect(0, 1).
         connect(0, 2).
-        connect(0, 3);
+        connect(0, 2).
+        connect(1, 6).
+        connect(2, 7).
+        connect(0, 1);
     println!("{}", linear_graph);
 }
 
@@ -63,14 +65,22 @@ impl<'a> LineGH<'a> {
 
 impl<'a> std::fmt::Display for LineGH<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //TODO: logic with boxes should be refactored
+        let boxes = self.edges.iter().enumerate().map(|(i, s)| {
+            let count_connected = self.count_by(i);
+            if count_connected > s.len() {
+                FormatBox::new(s, count_connected - s.len())
+            } else {
+                FormatBox::new(s, 1)
+            }
+        }).collect::<Vec<FormatBox>>();
+        
         let edge_space = " ";
-        let size_box_brackets = 2;
-        let size_edge_space = 1 + size_box_brackets;
+        let size_edge_space = 1;
         let max_space = size_edge_space * (self.edges.len() - 1);
-        let len_line = len_line(&self.edges) + max_space;
+        let len_line = box_len_line(&boxes) + max_space;
         let mut connected_index: BTreeMap<usize, usize> = BTreeMap::new();
         let mut draw_times: BTreeMap<usize, usize> = BTreeMap::new();
-
         let mut iteration = 0;
         for (node, friends) in &self.vertices {
             let current_edge_space =  size_edge_space * node;
@@ -81,12 +91,12 @@ impl<'a> std::fmt::Display for LineGH<'a> {
                 connected_index.entry(*friend).and_modify(|already_used| *already_used += 1).or_default();
                 let friend_edge_space =  size_edge_space * friend;
 
-                let start = lenght_before(&self.edges, *node) + current_edge_space + connected_index[node] ;
-                let size = lenght_before(&self.edges, *friend) + friend_edge_space - start + connected_index[friend] ;
+                let start = boxed_lenght_before(&boxes, *node) + current_edge_space + connected_index[node] ;
+                let size = boxed_lenght_before(&boxes, *friend) + friend_edge_space - start + connected_index[friend] ;
                 let mut line = filled_line(len_line, start, size as isize - 1, '-');
 
                 for (dn, count) in &draw_times {
-                    let start = lenght_before(&self.edges, *dn) + size_edge_space * dn;
+                    let start = boxed_lenght_before(&boxes, *dn) + size_edge_space * dn;
                     line = filled_from(&line, start, *count, '|');
                 }
 
@@ -95,7 +105,7 @@ impl<'a> std::fmt::Display for LineGH<'a> {
                 connect = change_by_index(&connect, start + size, '|');  
                 
                 for (dn, count) in &draw_times {
-                    let start = lenght_before(&self.edges, *dn) + size_edge_space * dn;
+                    let start = boxed_lenght_before(&boxes, *dn) + size_edge_space * dn;
                     connect = filled_from(&connect, start, *count, '|');
                 }
 
@@ -105,21 +115,12 @@ impl<'a> std::fmt::Display for LineGH<'a> {
                 draw_iteration += 1;
 
                 writeln!(f, "{}", line)?;
-                writeln!(f, "{}", connect)?;
+                writeln!(f, "{} {} {} {}", connect, start, size, boxed_lenght_before(&boxes, *friend))?;
             }
 
             iteration += 1;
         }
-        
-        //TODO: logic with boxes should be refactored
-        let boxes = self.edges.iter().enumerate().map(|(i, s)| {
-            let count_connected = self.count_by(i);
-            if count_connected > s.len() {
-                FormatBox::new(s, count_connected - s.len())
-            } else {
-                FormatBox::new(s, 1)
-            }
-        }).collect::<Vec<FormatBox>>();
+
         let str_boxes = boxes.iter().map(|s| String::from(s)).collect::<Vec<String>>();
         let boxed_edges = flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>()).unwrap();
         write!(f, "{}", boxed_edges)?;
@@ -142,6 +143,10 @@ fn change_by_index(origin: &str, index: usize, c: char) -> String {
 
 fn len_line(nodes: &[&str]) -> usize {
     nodes.iter().fold(0, |acc, n| acc + n.len())
+}
+
+fn box_len_line(boxes: &[FormatBox]) -> usize {
+    boxes.iter().fold(0, |acc, n| acc + n.line_lenght())
 }
 
 fn with_pin(s: &str, n: usize) -> String {
@@ -230,6 +235,10 @@ fn line(n: usize) -> String {
 
 fn lenght_before(words: &[&str], i: usize) -> usize {
     words.iter().take(i).fold(0, |acc, w| acc + w.len())
+}
+
+fn boxed_lenght_before(words: &[FormatBox], i: usize) -> usize {
+    words.iter().take(i).fold(0, |acc, w| acc + w.line_lenght())
 }
 
 fn index_to_start(words: &[&str], i: usize) -> usize {
