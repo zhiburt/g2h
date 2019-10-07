@@ -6,13 +6,12 @@ fn main() {
         parent: None,
         children: Some(
             vec![
-                        Box::new(graph::Node::new((1, "1"))),
-                        Box::new(graph::Node::new((2, "2"))),
-                        Box::new(graph::Node::new((3, "3"))),
-                        Box::new(graph::Node::new((4, "4"))),
-            ]),
+            Box::new(graph::Node::new((1, "1"))),
+            Box::new(graph::Node::new((2, "2"))),
+            Box::new(graph::Node::new((3, "3"))),
+            Box::new(graph::Node::new((4, "4"))),
+        ]),
     };
-    
     let linear_graph = LineGH::new(&["aaa", "bbb", "ccc", "ddd"]).
         connect(0, 1).
         connect(1, 2).
@@ -61,7 +60,7 @@ impl<'a> std::fmt::Display for LineGH<'a> {
             let current_edge_space =  size_edge_space * node;
 
             let mut draw_iteration = 0;
-            for friend in friends  {
+                for friend in friends  {
                 connected_index.entry(*node).and_modify(|already_used| *already_used += 1).or_default();
                 connected_index.entry(*friend).and_modify(|already_used| *already_used += 1).or_default();
                 let friend_edge_space =  size_edge_space * friend;
@@ -77,8 +76,8 @@ impl<'a> std::fmt::Display for LineGH<'a> {
 
                 let mut connect = filled_line(len_line, 0, len_line as isize, ' ');
                 connect = change_by_index(&connect, start, '|');
-                connect = change_by_index(&connect, start + size, '|');
-    
+                connect = change_by_index(&connect, start + size, '|');  
+                
                 for (dn, count) in &draw_times {
                     let start = lenght_before(&self.edges, *dn) + size_edge_space * dn;
                     connect = filled_from(&connect, start, *count, '|');
@@ -86,7 +85,7 @@ impl<'a> std::fmt::Display for LineGH<'a> {
 
                 draw_times.entry(*node).and_modify(|already_used| *already_used += 1).or_insert(1);
                 draw_times.entry(*friend).and_modify(|already_used| *already_used += 1).or_insert(1);
-                
+            
                 draw_iteration += 1;
 
                 writeln!(f, "{}", line)?;
@@ -96,7 +95,9 @@ impl<'a> std::fmt::Display for LineGH<'a> {
             iteration += 1;
         }
 
-        write!(f, "{}", self.edges.join(edge_space))?;
+        let boxes = self.edges.iter().map(|s| boxed(s, 0)).collect::<Vec<String>>();
+        let boxed_edges = flatten_line(&boxes.iter().map(|s| s.as_str()).collect::<Vec<&str>>()).unwrap();
+        write!(f, "{}", boxed_edges)?;
         Ok(())
     }
 }
@@ -208,4 +209,53 @@ fn lenght_before(words: &[&str], i: usize) -> usize {
 
 fn index_to_start(words: &[&str], i: usize) -> usize {
     words.iter().take(i).fold(0, |acc, w| acc + w.len())
+}
+
+fn boxed(s: &str, tab_size: usize) -> String {
+    let horizontal_tab = " ".repeat(tab_size);
+    let horizontal_line = "-".repeat(s.len() + 2 + tab_size + tab_size);
+    let vertical_space = format!("|{}|", " ".repeat(s.len() + tab_size + tab_size));
+    let content: String = s
+        .lines()
+        .map(|l| format!("|{}{}{}|", horizontal_tab, l, horizontal_tab))
+        .collect();
+
+    
+    let vertical_space_lined = match tab_size > 0 {
+        true => format!("{}\n", vertical_space),
+        false => "".to_owned(),
+    };
+
+    format!(
+        "{}\n\
+         {}\
+         {}\n\
+         {}\
+         {}",
+        horizontal_line, vertical_space_lined, content, vertical_space_lined, horizontal_line
+    )
+}
+
+fn flatten_line(src: &[&str]) -> Option<String> {
+    if src.len() < 0 {
+        return None;
+    }
+
+    let size = src[0].lines().count();
+    if !src.iter().all(|e| e.lines().count() == size) {
+        println!("{} {:?}", size, src);
+        return None;
+    }
+
+    let mut lines = String::new();
+    for line_index in 0..size {
+        for source in src {
+            let line = source.lines().collect::<Vec<&str>>();
+            lines.push_str(line[line_index]);
+            lines.push(' ');
+        }
+        lines.push('\n');
+    }
+
+    Some(lines)
 }
