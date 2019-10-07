@@ -1,27 +1,28 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 fn main() {
     let gh = graph::Node {
         data: (0, "0"),
         parent: None,
-        children: Some(
-            vec![
+        children: Some(vec![
             Box::new(graph::Node::new((1, "1"))),
             Box::new(graph::Node::new((2, "2"))),
             Box::new(graph::Node::new((3, "3"))),
             Box::new(graph::Node::new((4, "4"))),
         ]),
     };
-    let linear_graph = LineGH::new(&["aaa", "bbb", "ccc", "ddd", "yura", "pohodu", "nado", "idti", "spaty"]).
-        connect(1, 3).
-        connect(0, 3).
-        connect(0, 2).
-        connect(0, 2).
-        connect(0, 2).
-        connect(0, 2).
-        connect(1, 6).
-        connect(2, 7).
-        connect(0, 1);
+    let linear_graph = LineGH::new(&[
+        "aaa", "bbb", "ccc", "ddd", "yura", "pohodu", "nado", "idti", "spaty",
+    ])
+    .connect(1, 3)
+    .connect(0, 3)
+    .connect(0, 2)
+    .connect(0, 2)
+    .connect(0, 2)
+    .connect(0, 2)
+    .connect(1, 6)
+    .connect(2, 7)
+    .connect(0, 1);
     println!("{}", linear_graph);
 }
 
@@ -29,24 +30,24 @@ fn main() {
 struct LineGH<'a> {
     // might use here real graph?
     vertices: BTreeMap<usize, Vec<usize>>,
-    edges:  Vec<&'a str>,
+    edges: Vec<&'a str>,
 }
 
 impl<'a> LineGH<'a> {
     pub fn new(edges: &[&'a str]) -> Self {
         let mut pins = BTreeMap::new();
-        for i in 0 .. edges.len() {
+        for i in 0..edges.len() {
             pins.insert(i, 0);
         }
 
-        LineGH{
+        LineGH {
             edges: edges.to_vec(),
             vertices: BTreeMap::new(),
         }
     }
 
     pub fn connect(mut self, e1: usize, e2: usize) -> Self {
-        self.vertices.entry(e1).or_insert(Vec::new()).push(e2);
+        self.vertices.entry(e1).or_insert_with(Vec::new).push(e2);
 
         self
     }
@@ -54,10 +55,12 @@ impl<'a> LineGH<'a> {
     pub fn count_by(&self, i: usize) -> usize {
         match self.vertices.get(&i) {
             Some(connected_edges) => {
-                connected_edges.len() + self.vertices.values().fold(0, |acc, ver| {
-                    acc + ver.iter().filter(|&&v| v == i).count()
-                })
-            },
+                connected_edges.len()
+                    + self
+                        .vertices
+                        .values()
+                        .fold(0, |acc, ver| acc + ver.iter().filter(|&&v| v == i).count())
+            }
             None => 0,
         }
     }
@@ -66,33 +69,42 @@ impl<'a> LineGH<'a> {
 impl<'a> std::fmt::Display for LineGH<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //TODO: logic with boxes should be refactored
-        let boxes = self.edges.iter().enumerate().map(|(i, s)| {
-            let count_connected = self.count_by(i);
-            if count_connected > s.len() {
-                FormatBox::new(s, count_connected - s.len())
-            } else {
-                FormatBox::new(s, 1)
-            }
-        }).collect::<Vec<FormatBox>>();
-        
-        let edge_space = " ";
+        let boxes = self
+            .edges
+            .iter()
+            .enumerate()
+            .map(|(i, s)| {
+                let count_connected = self.count_by(i);
+                if count_connected > s.len() {
+                    FormatBox::new(s, count_connected - s.len())
+                } else {
+                    FormatBox::new(s, 1)
+                }
+            })
+            .collect::<Vec<FormatBox>>();
         let size_edge_space = 1;
         let max_space = size_edge_space * (self.edges.len() - 1);
         let len_line = box_len_line(&boxes) + max_space;
         let mut connected_index: BTreeMap<usize, usize> = BTreeMap::new();
         let mut draw_times: BTreeMap<usize, usize> = BTreeMap::new();
-        let mut iteration = 0;
         for (node, friends) in &self.vertices {
-            let current_edge_space =  size_edge_space * node;
+            let current_edge_space = size_edge_space * node;
 
-            let mut draw_iteration = 0;
-                for friend in friends  {
-                connected_index.entry(*node).and_modify(|already_used| *already_used += 1).or_default();
-                connected_index.entry(*friend).and_modify(|already_used| *already_used += 1).or_default();
-                let friend_edge_space =  size_edge_space * friend;
+            for friend in friends {
+                connected_index
+                    .entry(*node)
+                    .and_modify(|already_used| *already_used += 1)
+                    .or_default();
+                connected_index
+                    .entry(*friend)
+                    .and_modify(|already_used| *already_used += 1)
+                    .or_default();
+                let friend_edge_space = size_edge_space * friend;
 
-                let start = boxed_lenght_before(&boxes, *node) + current_edge_space + connected_index[node] ;
-                let size = boxed_lenght_before(&boxes, *friend) + friend_edge_space - start + connected_index[friend] ;
+                let start =
+                    boxed_lenght_before(&boxes, *node) + current_edge_space + connected_index[node];
+                let size = boxed_lenght_before(&boxes, *friend) + friend_edge_space - start
+                    + connected_index[friend];
                 let mut line = filled_line(len_line, start, size as isize - 1, '-');
 
                 for (dn, count) in &draw_times {
@@ -102,27 +114,39 @@ impl<'a> std::fmt::Display for LineGH<'a> {
 
                 let mut connect = filled_line(len_line, 0, len_line as isize, ' ');
                 connect = change_by_index(&connect, start, '|');
-                connect = change_by_index(&connect, start + size, '|');  
-                
+                connect = change_by_index(&connect, start + size, '|');
                 for (dn, count) in &draw_times {
                     let start = boxed_lenght_before(&boxes, *dn) + size_edge_space * dn;
                     connect = filled_from(&connect, start, *count, '|');
                 }
 
-                draw_times.entry(*node).and_modify(|already_used| *already_used += 1).or_insert(1);
-                draw_times.entry(*friend).and_modify(|already_used| *already_used += 1).or_insert(1);
-            
-                draw_iteration += 1;
+                draw_times
+                    .entry(*node)
+                    .and_modify(|already_used| *already_used += 1)
+                    .or_insert(1);
+                draw_times
+                    .entry(*friend)
+                    .and_modify(|already_used| *already_used += 1)
+                    .or_insert(1);
 
                 writeln!(f, "{}", line)?;
-                writeln!(f, "{} {} {} {}", connect, start, size, boxed_lenght_before(&boxes, *friend))?;
+                writeln!(
+                    f,
+                    "{} {} {} {}",
+                    connect,
+                    start,
+                    size,
+                    boxed_lenght_before(&boxes, *friend)
+                )?;
             }
-
-            iteration += 1;
         }
 
-        let str_boxes = boxes.iter().map(|s| String::from(s)).collect::<Vec<String>>();
-        let boxed_edges = flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>()).unwrap();
+        let str_boxes = boxes
+            .iter()
+            .map(String::from)
+            .collect::<Vec<String>>();
+        let boxed_edges =
+            flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>()).unwrap();
         write!(f, "{}", boxed_edges)?;
         Ok(())
     }
@@ -141,57 +165,8 @@ fn change_by_index(origin: &str, index: usize, c: char) -> String {
     str
 }
 
-fn len_line(nodes: &[&str]) -> usize {
-    nodes.iter().fold(0, |acc, n| acc + n.len())
-}
-
 fn box_len_line(boxes: &[FormatBox]) -> usize {
     boxes.iter().fold(0, |acc, n| acc + n.line_lenght())
-}
-
-fn with_pin(s: &str, n: usize) -> String {
-    let mut pin = String::new();
-    let mut i = 0;
-    for (pos, symb) in s.char_indices() {
-        if i < n {
-            pin.push('|');
-        } else {
-            pin.push(symb);
-        }
-        i += 1;
-    }
-
-    pin
-}
-
-fn with_line(s: &str, from: usize, to: usize) -> String {
-    let mut pin = String::new();
-    let mut i = 0;
-    for (pos, symb) in s.char_indices() {
-        if i > from && i < to {
-            pin.push('-');
-        } else {
-            pin.push(symb);
-        }
-        i += 1;
-    }
-
-    pin
-}
-
-fn cross_space(s: &str, mut used_points: usize, cross: char) -> String {
-    let mut crossed = String::new();
-    let mut i = 0;
-    for (pos, symb) in s.char_indices() {
-        if i < used_points {
-            crossed.push(cross);
-        } else {
-            crossed.push(symb);
-        }
-        i += 1;
-    }
-
-    crossed
 }
 
 fn filled_line(size: usize, from: usize, mut s: isize, symbol: char) -> String {
@@ -225,27 +200,11 @@ fn filled_from(origin: &str, from: usize, to: usize, symbol: char) -> String {
     line
 }
 
-fn space(n: usize) -> String {
-    " ".repeat(n)
-}
-
-fn line(n: usize) -> String {
-    "-".repeat(n)
-}
-
-fn lenght_before(words: &[&str], i: usize) -> usize {
-    words.iter().take(i).fold(0, |acc, w| acc + w.len())
-}
-
 fn boxed_lenght_before(words: &[FormatBox], i: usize) -> usize {
     words.iter().take(i).fold(0, |acc, w| acc + w.line_lenght())
 }
 
-fn index_to_start(words: &[&str], i: usize) -> usize {
-    words.iter().take(i).fold(0, |acc, w| acc + w.len())
-}
-
-struct FormatBox<'a>{
+struct FormatBox<'a> {
     message: &'a str,
     tab_size: usize,
 }
@@ -254,7 +213,7 @@ impl<'a> FormatBox<'a> {
     fn new(s: &'a str, tab_size: usize) -> Self {
         FormatBox {
             message: s,
-            tab_size: tab_size,
+            tab_size,
         }
     }
 
@@ -268,21 +227,25 @@ impl<'a> std::fmt::Display for FormatBox<'a> {
         let horizontal_tab = " ".repeat(self.tab_size);
         let horizontal_line = "-".repeat(self.line_lenght());
         let vertical_space = format!("|{}|", " ".repeat(self.line_lenght() - 2));
-        let content: String = self.message
+        let content: String = self
+            .message
             .lines()
             .map(|l| format!("|{}{}{}|", horizontal_tab, l, horizontal_tab))
             .collect();
 
-        let vertical_space_lined = match self.tab_size > 0 {
-            true => format!("{}\n", vertical_space),
-            false => "".to_owned(),
+        let vertical_space_lined = if self.tab_size > 0 {
+            format!("{}\n", vertical_space)
+        } else {
+            "".to_owned()
         };
 
-        write!(f, "{}\n\
-                   {}\
-                   {}\n\
-                   {}\
-                  {}",
+        write!(
+            f,
+            "{}\n\
+             {}\
+             {}\n\
+             {}\
+             {}",
             horizontal_line, vertical_space_lined, content, vertical_space_lined, horizontal_line
         )?;
         Ok(())
@@ -296,10 +259,6 @@ impl<'a> std::convert::From<&FormatBox<'a>> for String {
 }
 
 fn flatten_line(src: &[&str]) -> Option<String> {
-    if src.len() < 0 {
-        return None;
-    }
-
     let size = src[0].lines().count();
     if !src.iter().all(|e| e.lines().count() == size) {
         println!("{} {:#?}", size, src);
@@ -317,11 +276,4 @@ fn flatten_line(src: &[&str]) -> Option<String> {
     }
 
     Some(lines)
-}
-
-fn first_line_len(s: &str) -> usize {
-    match s.find('\n') {
-        Some(match_index) => match_index,
-        None => unreachable!(),
-    }
 }
