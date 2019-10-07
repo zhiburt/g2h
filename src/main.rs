@@ -13,15 +13,19 @@ fn main() {
         ]),
     };
     let linear_graph = LineGH::new(&["aaa", "bbb", "ccc", "ddd"]).
+        connect(0, 3).
+        connect(0, 3).
+        connect(0, 2).
+        connect(0, 2).
         connect(0, 1).
-        connect(1, 2).
-        connect(1, 3).
+        connect(0, 2).
         connect(0, 3);
     println!("{}", linear_graph);
 }
 
 #[derive(Debug)]
 struct LineGH<'a> {
+    // might use here real graph?
     vertices: BTreeMap<usize, Vec<usize>>,
     edges:  Vec<&'a str>,
 }
@@ -44,12 +48,24 @@ impl<'a> LineGH<'a> {
 
         self
     }
+
+    pub fn count_by(&self, i: usize) -> usize {
+        match self.vertices.get(&i) {
+            Some(connected_edges) => {
+                connected_edges.len() + self.vertices.values().fold(0, |acc, ver| {
+                    acc + ver.iter().filter(|&&v| v == i).count()
+                })
+            },
+            None => 0,
+        }
+    }
 }
 
 impl<'a> std::fmt::Display for LineGH<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let edge_space = " ";
-        let size_edge_space = 1;
+        let size_box_brackets = 2;
+        let size_edge_space = 1 + size_box_brackets;
         let max_space = size_edge_space * (self.edges.len() - 1);
         let len_line = len_line(&self.edges) + max_space;
         let mut connected_index: BTreeMap<usize, usize> = BTreeMap::new();
@@ -94,9 +110,18 @@ impl<'a> std::fmt::Display for LineGH<'a> {
 
             iteration += 1;
         }
-
-        let boxes = self.edges.iter().map(|s| boxed(s, 0)).collect::<Vec<String>>();
-        let boxed_edges = flatten_line(&boxes.iter().map(|s| s.as_str()).collect::<Vec<&str>>()).unwrap();
+        
+        //TODO: logic with boxes should be refactored
+        let boxes = self.edges.iter().enumerate().map(|(i, s)| {
+            let count_connected = self.count_by(i);
+            if count_connected > s.len() {
+                FormatBox::new(s, count_connected - s.len())
+            } else {
+                FormatBox::new(s, 1)
+            }
+        }).collect::<Vec<FormatBox>>();
+        let str_boxes = boxes.iter().map(|s| String::from(s)).collect::<Vec<String>>();
+        let boxed_edges = flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>()).unwrap();
         write!(f, "{}", boxed_edges)?;
         Ok(())
     }
@@ -211,29 +236,54 @@ fn index_to_start(words: &[&str], i: usize) -> usize {
     words.iter().take(i).fold(0, |acc, w| acc + w.len())
 }
 
-fn boxed(s: &str, tab_size: usize) -> String {
-    let horizontal_tab = " ".repeat(tab_size);
-    let horizontal_line = "-".repeat(s.len() + 2 + tab_size + tab_size);
-    let vertical_space = format!("|{}|", " ".repeat(s.len() + tab_size + tab_size));
-    let content: String = s
-        .lines()
-        .map(|l| format!("|{}{}{}|", horizontal_tab, l, horizontal_tab))
-        .collect();
+struct FormatBox<'a>{
+    message: &'a str,
+    tab_size: usize,
+}
 
-    
-    let vertical_space_lined = match tab_size > 0 {
-        true => format!("{}\n", vertical_space),
-        false => "".to_owned(),
-    };
+impl<'a> FormatBox<'a> {
+    fn new(s: &'a str, tab_size: usize) -> Self {
+        FormatBox {
+            message: s,
+            tab_size: tab_size,
+        }
+    }
 
-    format!(
-        "{}\n\
-         {}\
-         {}\n\
-         {}\
-         {}",
-        horizontal_line, vertical_space_lined, content, vertical_space_lined, horizontal_line
-    )
+    fn line_lenght(&self) -> usize {
+        2 + self.tab_size * 2 + self.message.len()
+    }
+}
+
+impl<'a> std::fmt::Display for FormatBox<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let horizontal_tab = " ".repeat(self.tab_size);
+        let horizontal_line = "-".repeat(self.line_lenght());
+        let vertical_space = format!("|{}|", " ".repeat(self.line_lenght() - 2));
+        let content: String = self.message
+            .lines()
+            .map(|l| format!("|{}{}{}|", horizontal_tab, l, horizontal_tab))
+            .collect();
+
+        let vertical_space_lined = match self.tab_size > 0 {
+            true => format!("{}\n", vertical_space),
+            false => "".to_owned(),
+        };
+
+        write!(f, "{}\n\
+                   {}\
+                   {}\n\
+                   {}\
+                  {}",
+            horizontal_line, vertical_space_lined, content, vertical_space_lined, horizontal_line
+        )?;
+        Ok(())
+    }
+}
+
+impl<'a> std::convert::From<&FormatBox<'a>> for String {
+    fn from(b: &FormatBox<'a>) -> String {
+        format!("{}", b)
+    }
 }
 
 fn flatten_line(src: &[&str]) -> Option<String> {
@@ -243,7 +293,7 @@ fn flatten_line(src: &[&str]) -> Option<String> {
 
     let size = src[0].lines().count();
     if !src.iter().all(|e| e.lines().count() == size) {
-        println!("{} {:?}", size, src);
+        println!("{} {:#?}", size, src);
         return None;
     }
 
@@ -258,4 +308,11 @@ fn flatten_line(src: &[&str]) -> Option<String> {
     }
 
     Some(lines)
+}
+
+fn first_line_len(s: &str) -> usize {
+    match s.find('\n') {
+        Some(match_index) => match_index,
+        None => unreachable!(),
+    }
 }
