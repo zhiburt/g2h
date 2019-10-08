@@ -1,28 +1,23 @@
 use std::collections::BTreeMap;
 
 fn main() {
-    let gh = graph::Node {
-        data: (0, "0"),
-        parent: None,
-        children: Some(vec![
-            Box::new(graph::Node::new((1, "1"))),
-            Box::new(graph::Node::new((2, "2"))),
-            Box::new(graph::Node::new((3, "3"))),
-            Box::new(graph::Node::new((4, "4"))),
-        ]),
-    };
-    let linear_graph = LineGH::new(&[
-        "aaa", "bbb", "ccc", "ddd", "yura", "pohodu", "nado", "idti", "spaty",
-    ])
+    let mut linear_graph = LineGH::new(&[])
     .connect(1, 3)
     .connect(0, 3)
-    .connect(0, 2)
-    .connect(0, 2)
-    .connect(0, 2)
     .connect(0, 2)
     .connect(1, 6)
     .connect(2, 7)
     .connect(0, 1);
+
+    linear_graph.add_edge("edge: &'a str");
+    linear_graph.add_edge("maxim");
+    linear_graph.add_edge("at work");
+    linear_graph.add_edge("should");
+    linear_graph.add_edge("I");
+    linear_graph.add_edge("be");
+    linear_graph.add_edge("left");
+    linear_graph.add_edge("!?!?");
+
     println!("{}", linear_graph);
 }
 
@@ -44,6 +39,12 @@ impl<'a> LineGH<'a> {
             edges: edges.to_vec(),
             vertices: BTreeMap::new(),
         }
+    }
+
+    pub fn add_edge(&mut self, edge: &'a str) -> usize {
+        self.edges.push(edge);
+        
+        self.edges.len() - 1
     }
 
     pub fn connect(mut self, e1: usize, e2: usize) -> Self {
@@ -75,10 +76,11 @@ impl<'a> std::fmt::Display for LineGH<'a> {
             .enumerate()
             .map(|(i, s)| {
                 let count_connected = self.count_by(i);
-                if count_connected > s.len() {
+                let single_box = FormatBox::new(s, 1);
+                if count_connected > single_box.line_lenght() {
                     FormatBox::new(s, count_connected - s.len())
                 } else {
-                    FormatBox::new(s, 1)
+                    single_box
                 }
             })
             .collect::<Vec<FormatBox>>();
