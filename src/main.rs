@@ -1,24 +1,84 @@
 use std::collections::BTreeMap;
+use std::io::{self, BufRead, Write};
+use regex::Regex;
 
-fn main() {
-    let mut linear_graph = LineGH::new(&[])
-    .connect(1, 3)
-    .connect(0, 3)
-    .connect(0, 2)
-    .connect(1, 6)
-    .connect(2, 7)
-    .connect(0, 1);
+fn main() -> io::Result<()> {
+    let mut gh = LineGH::new();
 
-    linear_graph.add_edge("edge: &'a str");
-    linear_graph.add_edge("maxim");
-    linear_graph.add_edge("at work");
-    linear_graph.add_edge("should");
-    linear_graph.add_edge("I");
-    linear_graph.add_edge("be");
-    linear_graph.add_edge("left");
-    linear_graph.add_edge("!?!?");
+    let command_prefix = b">>> ";
+    let stdin = io::stdin();
+    let stdout = io::stdout();
+    let mut buffer = String::new();
+    loop {
+        stdout.lock().write(command_prefix)?;
+        stdout.lock().flush()?;
 
-    println!("{}", linear_graph);
+        let read = stdin.lock().read_line(&mut buffer)?;
+        if read == 0 {
+            return Ok(());
+        }
+
+        let command = parse_command(&buffer);
+
+        handle_command(&mut stdout.lock(), &mut gh, command)?;
+
+        buffer.clear();
+    }
+}
+
+#[derive(Debug)]
+enum Command {
+    Print,
+    Structure,
+    AddEdge(Box<String>),
+    ConnectEdges(usize, usize)
+}
+
+fn parse_command(line: &str) -> Option<Command> {
+    let clean_line = line.trim();
+
+    if clean_line.starts_with("print"){
+        Some(Command::Print)
+    } else if clean_line.starts_with("structure") {
+        Some(Command::Structure)
+    } else {
+        let add_edge_command = Regex::new(r"edge add (?P<data>.+)").unwrap();
+        let add_verticale_command = Regex::new(r"edge connect (?P<first>\d+) (?P<second>\d+)").unwrap();
+
+        if add_edge_command.is_match(clean_line) {
+            let caps = add_edge_command.captures(clean_line).unwrap();
+            
+            Some(Command::AddEdge(Box::new(String::from(&caps["data"]))))
+        } else if add_verticale_command.is_match(clean_line) {
+            let caps = add_verticale_command.captures(clean_line).unwrap();
+            let first = caps["first"].parse().unwrap();
+            let second = caps["second"].parse().unwrap();
+
+            Some(Command::ConnectEdges(first, second))
+        } else {
+            None
+        }
+    }
+}
+
+fn handle_command<W: Write>(w: &mut W, gh: &mut LineGH, command: Option<Command>) -> io::Result<()> {
+    match command {
+        Some(Command::Print) => {
+            writeln!(w, "{}", gh)?;
+        },
+        Some(Command::Structure) => {},
+        Some(Command::AddEdge(data)) => {
+            gh.add_edge(&data);
+        },
+        Some(Command::ConnectEdges(from, to)) => {
+            gh.connect(from, to);
+        },
+        None => {
+            writeln!(w, "cannot hold this type of command")?;
+        },
+    }
+
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -275,7 +335,7 @@ fn flatten_line(src: &[&str]) -> String {
         lines.push('\n');
     }
 
-    lines
+    String::from(lines.trim())
 }
 
 fn size_biggest_line(s: &str) -> usize {
