@@ -22,35 +22,28 @@ fn main() {
 }
 
 #[derive(Debug)]
-struct LineGH<'a> {
+struct LineGH {
     // might use here real graph?
     vertices: BTreeMap<usize, Vec<usize>>,
-    edges: Vec<&'a str>,
+    edges: Vec<String>,
 }
 
-impl<'a> LineGH<'a> {
-    pub fn new(edges: &[&'a str]) -> Self {
-        let mut pins = BTreeMap::new();
-        for i in 0..edges.len() {
-            pins.insert(i, 0);
-        }
-
+impl LineGH {
+    pub fn new() -> Self {
         LineGH {
-            edges: edges.to_vec(),
+            edges: Vec::new(),
             vertices: BTreeMap::new(),
         }
     }
 
-    pub fn add_edge(&mut self, edge: &'a str) -> usize {
-        self.edges.push(edge);
+    pub fn add_edge(&mut self, edge: &str) -> usize {
+        self.edges.push(String::from(edge));
         
         self.edges.len() - 1
     }
 
-    pub fn connect(mut self, e1: usize, e2: usize) -> Self {
+    pub fn connect(&mut self, e1: usize, e2: usize) {
         self.vertices.entry(e1).or_insert_with(Vec::new).push(e2);
-
-        self
     }
 
     pub fn count_by(&self, i: usize) -> usize {
@@ -67,7 +60,7 @@ impl<'a> LineGH<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for LineGH<'a> {
+impl std::fmt::Display for LineGH {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //TODO: logic with boxes should be refactored
         let boxes = self
