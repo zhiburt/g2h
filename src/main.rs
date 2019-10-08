@@ -141,12 +141,9 @@ impl<'a> std::fmt::Display for LineGH<'a> {
             }
         }
 
-        let str_boxes = boxes
-            .iter()
-            .map(String::from)
-            .collect::<Vec<String>>();
+        let str_boxes = boxes.iter().map(String::from).collect::<Vec<String>>();
         let boxed_edges =
-            flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>()).unwrap();
+            flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>());
         write!(f, "{}", boxed_edges)?;
         Ok(())
     }
@@ -258,22 +255,43 @@ impl<'a> std::convert::From<&FormatBox<'a>> for String {
     }
 }
 
-fn flatten_line(src: &[&str]) -> Option<String> {
-    let size = src[0].lines().count();
-    if !src.iter().all(|e| e.lines().count() == size) {
-        println!("{} {:#?}", size, src);
-        return None;
-    }
+fn flatten_line(src: &[&str]) -> String {
+    let element_with_max_lines = src
+        .iter()
+        .max_by(|x, y| x.lines().count().cmp(&y.lines().count()));
+    let max_lines = match element_with_max_lines {
+        Some(element) => element.lines().count(),
+        None => 0,
+    };
 
     let mut lines = String::new();
-    for line_index in 0..size {
+    for line_index in 0..max_lines {
         for source in src {
-            let line = source.lines().collect::<Vec<&str>>();
-            lines.push_str(line[line_index]);
+            let element_lines = source.lines().collect::<Vec<&str>>();
+            let max_line_size = size_biggest_line(source);
+            let line = match element_lines.get(line_index) {
+                Some(line) => format!("{: <1$}", line, max_line_size),
+                None => " ".repeat(max_line_size),
+            };
+
+            lines.push_str(&line);
             lines.push(' ');
         }
         lines.push('\n');
     }
 
-    Some(lines)
+    lines
+}
+
+fn size_biggest_line(s: &str) -> usize {
+    s.lines().fold(
+        0,
+        |max, item| {
+            if item.len() > max {
+                item.len()
+            } else {
+                max
+            }
+        },
+    )
 }
