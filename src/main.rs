@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, Read, Write};
 use regex::Regex;
 
 fn main() -> io::Result<()> {
@@ -8,21 +8,30 @@ fn main() -> io::Result<()> {
     let command_prefix = b">>> ";
     let stdin = io::stdin();
     let stdout = io::stdout();
-    let mut buffer = String::new();
     loop {
-        stdout.lock().write(command_prefix)?;
+        stdout.lock().write_all(command_prefix)?;
         stdout.lock().flush()?;
 
-        let read = stdin.lock().read_line(&mut buffer)?;
-        if read == 0 {
+        let mut stdin = stdin.lock();
+        let buffer = stdin.fill_buf()?;
+        if buffer.is_empty() {
             return Ok(());
         }
 
-        let command = parse_command(&buffer);
+        let lines = buffer
+            .split(u8::is_ascii_control)
+            .map(std::str::from_utf8)
+            .flatten()
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<&str>>();
 
-        handle_command(&mut stdout.lock(), &mut gh, command)?;
+        for line in lines {
+            let command = parse_command(&line);
+            handle_command(&mut stdout.lock(), &mut gh, command)?;
+        }
 
-        buffer.clear();
+        let len = buffer.len();
+        stdin.consume(len);
     }
 }
 
