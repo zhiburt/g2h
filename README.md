@@ -2,23 +2,47 @@
 
 Is kind of graph viewer in a terminal.
 
-Example output
+## Get started
+
+Nowadays, when have been developed a cli prompt part, `g2h` works with stdin as a major input system.
+
+If you write such commands like this you will get such a type of output.
 
 ```text
- ---           
-|   |          
-| --|-------   
-||  |       |  
-||  | --    |  
-||  ||  |   |  
-||  || -|---|  
-||  ||| |   || 
-aaa bbb ccc ddd
+>>> edge add hello
+>>> edge add world
+>>> edge add g2h    
+>>> edge connect 0 2 
+>>> edge connect 0 1
+>>> edge connect 1 2
+>>> print
+ -------------------       
+|                   |
+| --------          |      
+||        |         |     
+||        | --------|      
+||        ||        ||  
+--------- --------- ------- 
+|       | |       | |     | 
+| hello | | world | | g2h | 
+|       | |       | |     | 
+--------- --------- -------
 ```
+
+## Commands
+
+| type | command | effect |
+|:----:|:-------:|:------|
+| edge |   add   | get message and place it as a new edge |
+| edge |   connect   | takes 2 parametes, indexes which edges we whant to have connected |
+| |   print   | print, graph which was built |
 
 ## Roadmap
 
 - [ ] Draw verticales below nodes list
-- [ ] Support more then len(node_data) connections on node, encrese it's scope
+- [x] Support more then len(node_data) connections on node, encrese it's scope
 - [ ] A Dinamic setting on space on connection
-- [ ] CLI Promt
+- [x] CLI Promt
+- [ ] Search a way on the graph
+- [ ] Connector types (for related graphs)
+- [ ] Refactoring print method
