@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
-use std::io::{self, BufRead, Read, Write};
 use regex::Regex;
+use std::collections::BTreeMap;
+use std::io::{self, BufRead, Write};
 
 fn main() -> io::Result<()> {
     let mut gh = LineGH::new();
@@ -40,23 +40,23 @@ enum Command {
     Print,
     Structure,
     AddEdge(Box<String>),
-    ConnectEdges(usize, usize)
+    ConnectEdges(usize, usize),
 }
 
 fn parse_command(line: &str) -> Option<Command> {
     let clean_line = line.trim();
 
-    if clean_line.starts_with("print"){
+    if clean_line.starts_with("print") {
         Some(Command::Print)
     } else if clean_line.starts_with("structure") {
         Some(Command::Structure)
     } else {
         let add_edge_command = Regex::new(r"edge add (?P<data>.+)").unwrap();
-        let add_verticale_command = Regex::new(r"edge connect (?P<first>\d+) (?P<second>\d+)").unwrap();
+        let add_verticale_command =
+            Regex::new(r"edge connect (?P<first>\d+) (?P<second>\d+)").unwrap();
 
         if add_edge_command.is_match(clean_line) {
             let caps = add_edge_command.captures(clean_line).unwrap();
-            
             Some(Command::AddEdge(Box::new(String::from(&caps["data"]))))
         } else if add_verticale_command.is_match(clean_line) {
             let caps = add_verticale_command.captures(clean_line).unwrap();
@@ -70,21 +70,25 @@ fn parse_command(line: &str) -> Option<Command> {
     }
 }
 
-fn handle_command<W: Write>(w: &mut W, gh: &mut LineGH, command: Option<Command>) -> io::Result<()> {
+fn handle_command<W: Write>(
+    w: &mut W,
+    gh: &mut LineGH,
+    command: Option<Command>,
+) -> io::Result<()> {
     match command {
         Some(Command::Print) => {
             writeln!(w, "{}", gh)?;
-        },
-        Some(Command::Structure) => {},
+        }
+        Some(Command::Structure) => {}
         Some(Command::AddEdge(data)) => {
             gh.add_edge(&data);
-        },
+        }
         Some(Command::ConnectEdges(from, to)) => {
             gh.connect(from, to);
-        },
+        }
         None => {
             writeln!(w, "cannot hold this type of command")?;
-        },
+        }
     }
 
     Ok(())
@@ -107,7 +111,6 @@ impl LineGH {
 
     pub fn add_edge(&mut self, edge: &str) -> usize {
         self.edges.push(String::from(edge));
-        
         self.edges.len() - 1
     }
 
