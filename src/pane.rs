@@ -13,7 +13,7 @@ pub enum ConnectorType {
 }
 
 impl ConnectedPane {
-    pub fn new(concept: Vec<usize>, space: usize, connection: ConnectorType) -> Self {
+    pub fn new(concept: &Vec<usize>, space: usize, connection: ConnectorType) -> Self {
         let connector = match connection {
             ConnectorType::General => '|',
             ConnectorType::Arrow => 'v',
@@ -21,8 +21,8 @@ impl ConnectedPane {
         
         ConnectedPane {
             connected_list: Vec::new(),
+            concept: concept.clone(),
             connector,
-            concept,
             space,
         }
     }
