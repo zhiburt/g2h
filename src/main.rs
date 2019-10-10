@@ -2,6 +2,8 @@ use regex::Regex;
 use std::collections::BTreeMap;
 use std::io::{self, BufRead, Write};
 
+mod pane;
+
 fn main() -> io::Result<()> {
     let mut gh = LineGH::new();
 
@@ -149,64 +151,17 @@ impl std::fmt::Display for LineGH {
                 }
             })
             .collect::<Vec<FormatBox>>();
-        let size_edge_space = 1;
-        let max_space = size_edge_space * (self.edges.len() - 1);
-        let len_line = box_len_line(&boxes) + max_space;
-        let mut connected_index: BTreeMap<usize, usize> = BTreeMap::new();
-        let mut draw_times: BTreeMap<usize, usize> = BTreeMap::new();
+        
+        let boxes_length = boxes.iter().map(FormatBox::line_lenght).collect::<Vec<usize>>();
+        let mut pane = pane::ConnectedPane::new(&boxes_length, 1, pane::ConnectorType::General);
+
         for (node, friends) in &self.vertices {
-            let current_edge_space = size_edge_space * node;
-
             for friend in friends {
-                connected_index
-                    .entry(*node)
-                    .and_modify(|already_used| *already_used += 1)
-                    .or_default();
-                connected_index
-                    .entry(*friend)
-                    .and_modify(|already_used| *already_used += 1)
-                    .or_default();
-                let friend_edge_space = size_edge_space * friend;
-
-                let start =
-                    boxed_lenght_before(&boxes, *node) + current_edge_space + connected_index[node];
-                let size = boxed_lenght_before(&boxes, *friend) + friend_edge_space - start
-                    + connected_index[friend];
-                let mut line = filled_line(len_line, start, size as isize - 1, '-');
-
-                for (dn, count) in &draw_times {
-                    let start = boxed_lenght_before(&boxes, *dn) + size_edge_space * dn;
-                    line = filled_from(&line, start, *count, '|');
-                }
-
-                let mut connect = filled_line(len_line, 0, len_line as isize, ' ');
-                connect = change_by_index(&connect, start, '|');
-                connect = change_by_index(&connect, start + size, '|');
-                for (dn, count) in &draw_times {
-                    let start = boxed_lenght_before(&boxes, *dn) + size_edge_space * dn;
-                    connect = filled_from(&connect, start, *count, '|');
-                }
-
-                draw_times
-                    .entry(*node)
-                    .and_modify(|already_used| *already_used += 1)
-                    .or_insert(1);
-                draw_times
-                    .entry(*friend)
-                    .and_modify(|already_used| *already_used += 1)
-                    .or_insert(1);
-
-                writeln!(f, "{}", line)?;
-                writeln!(
-                    f,
-                    "{} {} {} {}",
-                    connect,
-                    start,
-                    size,
-                    boxed_lenght_before(&boxes, *friend)
-                )?;
+                pane.connect(*node, *friend);
             }
         }
+
+        writeln!(f, "{}", pane.pane())?;
 
         let str_boxes = boxes.iter().map(String::from).collect::<Vec<String>>();
         let boxed_edges =
