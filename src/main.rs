@@ -67,17 +67,14 @@ impl ConnectedPane {
 
             let mut lhs_connection = Point{x: from_index + from_diff, y: current_level + 1};
             let mut rhs_connection = Point{x: to_index + to_diff, y: current_level + 1};
+   
+            let (from, to) = if lhs_connection.x > rhs_connection.x {
+                (Point{x: lhs_connection.x, y: current_level}, Point{x: rhs_connection.x + 1, y: current_level})
+            } else {
+                (Point{x: lhs_connection.x + 1, y: current_level}, Point{x: rhs_connection.x, y: current_level})
+            };
 
-            if lhs_connection.x > rhs_connection.x {
-                std::mem::swap(&mut lhs_connection, &mut rhs_connection);
-            }
-
-            coordinates.push(LineCoordinate{
-                from: Point{x: lhs_connection.x + 1, y: current_level},
-                to: Point{x: rhs_connection.x, y: current_level},
-                lhs_connection,
-                rhs_connection
-            });
+            coordinates.push(LineCoordinate{from, to, lhs_connection, rhs_connection});
 
             current_level += 2;
         }
@@ -149,7 +146,7 @@ enum Shape {
     Point(Point),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 struct Point {
     x: usize,
     y: usize,
