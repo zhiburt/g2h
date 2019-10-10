@@ -5,9 +5,8 @@ fn main() -> io::Result<()> {
     let mut pane = ConnectedPane::new(vec![3, 3, 3], 1);
 
     pane.connect(0, 1);
-    pane.connect(0, 1);
     pane.connect(0, 2);
-    pane.connect(1, 2);
+    pane.connect(2, 0);
 
     let pane = pane.pane();
     
@@ -66,8 +65,12 @@ impl ConnectedPane {
             let from_diff = *already_used_connector.entry(*from).and_modify(|e| *e += 1).or_default();
             let to_diff = *already_used_connector.entry(*to).and_modify(|e| *e += 1).or_default();
 
-            let lhs_connection = Point{x: from_index + from_diff, y: current_level + 1};
-            let rhs_connection = Point{x: to_index + to_diff, y: current_level + 1};
+            let mut lhs_connection = Point{x: from_index + from_diff, y: current_level + 1};
+            let mut rhs_connection = Point{x: to_index + to_diff, y: current_level + 1};
+
+            if lhs_connection.x > rhs_connection.x {
+                std::mem::swap(&mut lhs_connection, &mut rhs_connection);
+            }
 
             coordinates.push(LineCoordinate{
                 from: Point{x: lhs_connection.x + 1, y: current_level},
@@ -116,18 +119,23 @@ impl Pane {
             Shape::Point(Point { x, y }) => {
                 self.surface[x][y] = c;
             }
-            Shape::Line(mut point1, mut point2) => {
+            Shape::Line(point1, point2) => {
                 //TODO: simplify
-                // x1 -->= x2
                 if point1.y == point2.y {
-                    while point1.x < point2.x {
-                        self.surface[point1.y][point1.x] = c;
-                        point1.x += 1;
+                    let mut min = std::cmp::min(point1.x, point2.x);
+                    let max = std::cmp::max(point1.x, point2.x);
+
+                    while min < max {
+                        self.surface[point1.y][min] = c;
+                        min += 1;
                     }
                 } else if point1.x == point2.x {
-                    while point1.y < point2.y {
-                        self.surface[point1.y][point1.x] = c;
-                        point1.y += 1;
+                    let mut min = std::cmp::min(point1.y, point2.y);
+                    let max = std::cmp::max(point1.y, point2.y);
+
+                    while min < max {
+                        self.surface[min][point1.x] = c;
+                        min += 1;
                     }
                 }
             }
