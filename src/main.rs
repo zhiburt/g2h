@@ -2,7 +2,7 @@ use std::io::{self};
 use std::collections::BTreeMap;
 
 fn main() -> io::Result<()> {
-    let mut pane = ConnectedPane::new(vec![3, 3, 3], 1);
+    let mut pane = ConnectedPane::new(vec![3, 3, 3], 1, ConnectorType::Arrow);
 
     pane.connect(0, 1);
     pane.connect(0, 2);
@@ -27,12 +27,24 @@ struct ConnectedPane {
     connected_list: Vec<(usize, usize)>,
     concept: Vec<usize>,
     space: usize,
+    connector: char,
+}
+
+enum ConnectorType {
+    General,
+    Arrow,
 }
 
 impl ConnectedPane {
-    fn new(concept: Vec<usize>, space: usize) -> Self {
+    fn new(concept: Vec<usize>, space: usize, connection: ConnectorType) -> Self {
+        let connector = match connection {
+            ConnectorType::General => '|',
+            ConnectorType::Arrow => 'v',
+        };
+        
         ConnectedPane {
             connected_list: Vec::new(),
+            connector,
             concept,
             space,
         }
@@ -85,6 +97,8 @@ impl ConnectedPane {
             pane.put(Shape::Line(coordinate.lhs_connection, lhs_conn_down), '|');
             pane.put(Shape::Line(coordinate.rhs_connection, rhs_conn_down), '|');
 
+            pane.put(Shape::Point(Point{x: rhs_conn_down.x, y: rhs_conn_down.y - 1}), self.connector);
+
             pane.put(Shape::Line(coordinate.from, coordinate.to), '-');
         }
     
@@ -114,7 +128,7 @@ impl Pane {
     fn put(&mut self, shape: Shape, c: char) {
         match shape {
             Shape::Point(Point { x, y }) => {
-                self.surface[x][y] = c;
+                self.surface[y][x] = c;
             }
             Shape::Line(point1, point2) => {
                 //TODO: simplify
