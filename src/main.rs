@@ -151,8 +151,11 @@ impl std::fmt::Display for LineGH {
                 }
             })
             .collect::<Vec<FormatBox>>();
-        
-        let boxes_length = boxes.iter().map(FormatBox::line_lenght).collect::<Vec<usize>>();
+
+        let boxes_length = boxes
+            .iter()
+            .map(FormatBox::line_lenght)
+            .collect::<Vec<usize>>();
         let mut pane = pane::ConnectedPane::new(&boxes_length, 1, pane::ConnectorType::General);
 
         for (node, friends) in &self.vertices {
@@ -169,58 +172,6 @@ impl std::fmt::Display for LineGH {
         write!(f, "{}", boxed_edges)?;
         Ok(())
     }
-}
-
-fn change_by_index(origin: &str, index: usize, c: char) -> String {
-    let mut str = String::with_capacity(origin.len());
-    for (i, symbol) in origin.chars().enumerate() {
-        if i == index {
-            str.push(c);
-        } else {
-            str.push(symbol);
-        }
-    }
-
-    str
-}
-
-fn box_len_line(boxes: &[FormatBox]) -> usize {
-    boxes.iter().fold(0, |acc, n| acc + n.line_lenght())
-}
-
-fn filled_line(size: usize, from: usize, mut s: isize, symbol: char) -> String {
-    let mut line = String::new();
-    let mut i = 0;
-    while i < size {
-        if i > from && s > 0 {
-            line.push(symbol);
-            s -= 1;
-        } else {
-            line.push(' ');
-        }
-        i += 1;
-    }
-
-    line
-}
-
-fn filled_from(origin: &str, from: usize, to: usize, symbol: char) -> String {
-    let mut line = String::new();
-    let mut added = 0;
-    for (i, s) in origin.chars().enumerate() {
-        if i >= from && added < to {
-            line.push(symbol);
-            added += 1;
-        } else {
-            line.push(s);
-        }
-    }
-
-    line
-}
-
-fn boxed_lenght_before(words: &[FormatBox], i: usize) -> usize {
-    words.iter().take(i).fold(0, |acc, w| acc + w.line_lenght())
 }
 
 struct FormatBox<'a> {

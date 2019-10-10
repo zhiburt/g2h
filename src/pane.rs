@@ -13,7 +13,7 @@ pub enum ConnectorType {
 }
 
 impl ConnectedPane {
-    pub fn new(concept: &Vec<usize>, space: usize, connection: ConnectorType) -> Self {
+    pub fn new(concept: &[usize], space: usize, connection: ConnectorType) -> Self {
         let connector = match connection {
             ConnectorType::General => '|',
             ConnectorType::Arrow => 'v',
@@ -21,7 +21,7 @@ impl ConnectedPane {
         
         ConnectedPane {
             connected_list: Vec::new(),
-            concept: concept.clone(),
+            concept: concept.to_owned(),
             connector,
             space,
         }
@@ -45,22 +45,22 @@ impl ConnectedPane {
         };
 
         let mut coordinates: Vec<LineCoordinate> = Vec::new();
-        let mut already_used_connector: BTreeMap<usize, usize> = BTreeMap::new();
+        let mut used: BTreeMap<usize, usize> = BTreeMap::new();
         let mut current_level = 0;
         for (from, to) in &self.connected_list {
             let from_index = self.start_element_index(*from);
             let to_index = self.start_element_index(*to);
 
-            let from_diff = *already_used_connector.entry(*from).and_modify(|e| *e += 1).or_default();
-            let to_diff = *already_used_connector.entry(*to).and_modify(|e| *e += 1).or_default();
+            let from_diff = *used.entry(*from).and_modify(|e| *e += 1).or_default();
+            let to_diff = *used.entry(*to).and_modify(|e| *e += 1).or_default();
 
-            let mut lhs_connection = Point{x: from_index + from_diff, y: current_level + 1};
-            let mut rhs_connection = Point{x: to_index + to_diff, y: current_level + 1};
+            let lhs_connection = Point::new(from_index + from_diff, current_level + 1);
+            let rhs_connection = Point::new(to_index + to_diff, current_level + 1);
    
             let (from, to) = if lhs_connection.x > rhs_connection.x {
-                (Point{x: lhs_connection.x, y: current_level}, Point{x: rhs_connection.x + 1, y: current_level})
+                (Point::new(lhs_connection.x, current_level), Point::new(rhs_connection.x + 1, current_level))
             } else {
-                (Point{x: lhs_connection.x + 1, y: current_level}, Point{x: rhs_connection.x, y: current_level})
+                (Point::new(lhs_connection.x + 1, current_level), Point::new(rhs_connection.x, current_level))
             };
 
             coordinates.push(LineCoordinate{from, to, lhs_connection, rhs_connection});
@@ -69,12 +69,12 @@ impl ConnectedPane {
         }
 
         for coordinate in coordinates {
-            let lhs_conn_down = Point{x: coordinate.lhs_connection.x, y: hight};
-            let rhs_conn_down = Point{x: coordinate.rhs_connection.x, y: hight};
+            let lhs_conn_down = Point::new(coordinate.lhs_connection.x, hight);
+            let rhs_conn_down = Point::new(coordinate.rhs_connection.x, hight);
             pane.put(Shape::Line(coordinate.lhs_connection, lhs_conn_down), '|');
             pane.put(Shape::Line(coordinate.rhs_connection, rhs_conn_down), '|');
 
-            pane.put(Shape::Point(Point{x: rhs_conn_down.x, y: rhs_conn_down.y - 1}), self.connector);
+            pane.put(Shape::Point(Point::new(rhs_conn_down.x, rhs_conn_down.y - 1)), self.connector);
 
             pane.put(Shape::Line(coordinate.from, coordinate.to), '-');
         }
@@ -133,11 +133,12 @@ impl Pane {
 
 impl std::fmt::Display for Pane {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.surface
+        let lines = self.surface
             .iter()
             .map(|line| line.iter().collect::<String>())
             .collect::<Vec<String>>()
-            .join("\n"))
+            .join("\n");
+        write!(f, "{}", lines)
     }
 }
 
@@ -151,4 +152,10 @@ pub enum Shape {
 pub struct Point {
     x: usize,
     y: usize,
+}
+
+impl Point {
+    fn new(x: usize, y: usize) -> Self {
+        Point {x, y}
+    }
 }
