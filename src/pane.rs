@@ -131,6 +131,16 @@ impl Pane {
     }
 }
 
+impl std::fmt::Display for Pane {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.surface
+            .iter()
+            .map(|line| line.iter().collect::<String>())
+            .collect::<Vec<String>>()
+            .join("\n"))
+    }
+}
+
 #[derive(Debug)]
 pub enum Shape {
     Line(Point, Point),
