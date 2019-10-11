@@ -41,8 +41,10 @@ If you write such commands like this you will get such a type of output.
 
 - [ ] Draw verticales below nodes list
 - [x] Support more then len(node_data) connections on node, encrese it's scope
-- [ ] A Dinamic setting on space on connection
+- [x] A Dinamic setting on space on connection
 - [x] CLI Promt
+- [ ] Support a history of commands(Up/Down buttons as press buttons actions)
 - [ ] Search a way on the graph
-- [ ] Connector types (for related graphs)
-- [ ] Refactoring print method
+- [x] Connector types (for related graphs)
+- [x] Refactoring print method
+- [ ] Refactoring
