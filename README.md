@@ -9,27 +9,23 @@ Nowadays, when have been developed a cli prompt part, `g2h` works with stdin as 
 If you write such commands like this you will get such a type of output.
 
 ```text
->>> edge add hello
->>> edge add world
->>> edge add g2h
->>> edge connect 0 1
->>> edge connect 0 2
->>> edge connect 2 0
->>> settings related
->>> settings gap edge 2
->>> settings gap vert 2
->>> print
- ----------                  
-|          |                 
-|  -------------------       
-| |        |          |      
-| |  -------------------     
-| | v      v          v |    
----------  ---------  -------  
-|       |  |       |  |     |  
-| hello |  | world |  | g2h |  
-|       |  |       |  |     |  
----------  ---------  -------
+ ----------                                                    
+|          |                                                   
+|  -------------------                                         
+| |        |          |                                        
+| |  -------------------                                       
+| | |      |          | |                                      
+| | |      |          | |       ----------                     
+| | |      |          | |      |          |                    
+| | |      |          | |      |  --------------------         
+| | |      |          | |      | |        |           |        
+| | |  -------------------------------------------------       
+| | v v    v          v |      | |        v           v |      
+---------  ---------  -------  ---------  ----------  ---------  
+|       |  |       |  |     |  |       |  |        |  |       |  
+| hello |  | world |  | g2h |  | macha |  | andrey |  | vadim |  
+|       |  |       |  |     |  |       |  |        |  |       |  
+---------  ---------  -------  ---------  ----------  ---------
 ```
 
 ## Commands
