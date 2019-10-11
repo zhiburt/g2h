@@ -100,31 +100,24 @@ struct LineGH {
     // might use here real graph?
     vertices: BTreeMap<usize, Vec<usize>>,
     edges: Vec<String>,
-    pane_settings: PaneSettings,
-}
-
-struct PaneSettings {
-    gap_size: usize,
-    type_connection: pane::ConnectorType,
+    pane_settings: pane::PaneSettings,
 }
 
 impl LineGH {
     pub fn new() -> Self {
+        LineGH::new_with_settings(pane::PaneSettings{
+            gap_size: 1,
+            connection_size: 1,
+            connection_type: pane::ConnectorType::General,
+        })
+    }
+
+    pub fn new_with_settings(settings: pane::PaneSettings) -> Self {
         LineGH {
             edges: Vec::new(),
             vertices: BTreeMap::new(),
-            pane_settings: PaneSettings {
-                gap_size: 1,
-                type_connection: pane::ConnectorType::General,
-            },
+            pane_settings: settings,
         }
-    }
-
-    pub fn new_with_settings(settings: PaneSettings) -> Self {
-        let mut gh = LineGH::new();
-        gh.pane_settings = settings;
-
-        gh
     }
 
     pub fn add_edge(&mut self, edge: &str) -> usize {
@@ -160,7 +153,7 @@ impl std::fmt::Display for LineGH {
             .map(|(i, s)| {
                 let count_connected = self.count_by(i);
                 let single_box = FormatBox::new(s, 1);
-                if count_connected > single_box.line_lenght() {
+                if count_connected > single_box.line_lenght() * self.pane_settings.connection_size {
                     FormatBox::new(s, count_connected - s.len())
                 } else {
                     single_box
@@ -172,11 +165,7 @@ impl std::fmt::Display for LineGH {
             .iter()
             .map(FormatBox::line_lenght)
             .collect::<Vec<usize>>();
-        let mut pane = pane::ConnectedPane::new(
-            &boxes_length,
-            self.pane_settings.gap_size,
-            self.pane_settings.type_connection,
-        );
+        let mut pane = pane::ConnectedPane::new(&boxes_length, self.pane_settings.clone());
 
         for (node, friends) in &self.vertices {
             for friend in friends {
