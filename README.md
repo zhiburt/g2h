@@ -33,9 +33,11 @@ If you write such commands like this you will get such a type of output.
 
 | type | command | effect |
 |:----:|:-------:|:------|
+| |   print   | print, graph which was built |
 | edge |   add   | get message and place it as a new edge |
 | edge |   connect   | takes 2 parametes, indexes which edges we whant to have connected |
-| |   print   | print, graph which was built |
+| settings |   gap edge   | takes size of gap between edges |
+| settings |   gap verticales   | takes size of gap between connection lines |
 
 ## Roadmap
 
