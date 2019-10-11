@@ -52,8 +52,8 @@ impl ConnectedPane {
             let from_index = self.start_element_index(*from);
             let to_index = self.start_element_index(*to);
 
-            let from_diff = *used.entry(*from).and_modify(|e| *e += 1).or_default();
-            let to_diff = *used.entry(*to).and_modify(|e| *e += 1).or_default();
+            let from_diff = *used.entry(*from).and_modify(|e| *e += self.settings.connection_size).or_default();
+            let to_diff = *used.entry(*to).and_modify(|e| *e += self.settings.connection_size).or_default();
 
             let lhs_connection = Point::new(from_index + from_diff, current_level + 1);
             let rhs_connection = Point::new(to_index + to_diff, current_level + 1);
