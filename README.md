@@ -11,10 +11,13 @@ If you write such commands like this you will get such a type of output.
 ```text
 >>> edge add hello
 >>> edge add world
->>> edge add g2h    
->>> edge connect 0 2 
+>>> edge add g2h
 >>> edge connect 0 1
->>> edge connect 1 2
+>>> edge connect 0 2
+>>> edge connect 2 0
+>>> settings related
+>>> settings gap edge 2
+>>> settings gap vert 2
 >>> print
  ----------                  
 |          |                 
