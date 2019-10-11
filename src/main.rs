@@ -40,6 +40,9 @@ fn main() -> io::Result<()> {
 #[derive(Debug)]
 enum Command {
     Print,
+    SetGHType,
+    SetGap(usize),
+    SetConnectionSize(usize),
     Structure,
     AddEdge(Box<String>),
     ConnectEdges(usize, usize),
@@ -52,7 +55,26 @@ fn parse_command(line: &str) -> Option<Command> {
         Some(Command::Print)
     } else if clean_line.starts_with("structure") {
         Some(Command::Structure)
-    } else {
+    } else if clean_line.starts_with("settings") {
+        let gap_regex = Regex::new(r"settings gap edge (?P<size>.+)").unwrap();
+        let connection_size_regex = Regex::new(r"settings gap vert (?P<size>.+)").unwrap();
+
+        if gap_regex.is_match(clean_line) {
+            let caps = gap_regex.captures(clean_line).unwrap();
+            let size = caps["size"].parse().unwrap();
+
+            Some(Command::SetGap(size))
+        } else if connection_size_regex.is_match(clean_line) {
+            let caps = connection_size_regex.captures(clean_line).unwrap();
+            let size = caps["size"].parse().unwrap();
+
+            Some(Command::SetConnectionSize(size))
+        } else if clean_line.contains("settings related") {
+            Some(Command::SetGHType)
+        } else {
+            None
+        }
+    }else {
         let add_edge_command = Regex::new(r"edge add (?P<data>.+)").unwrap();
         let add_verticale_command =
             Regex::new(r"edge connect (?P<first>\d+) (?P<second>\d+)").unwrap();
@@ -80,17 +102,26 @@ fn handle_command<W: Write>(
     match command {
         Some(Command::Print) => {
             writeln!(w, "{}", gh)?;
-        }
-        Some(Command::Structure) => {}
+        },
+        Some(Command::Structure) => {},
         Some(Command::AddEdge(data)) => {
             gh.add_edge(&data);
-        }
+        },
         Some(Command::ConnectEdges(from, to)) => {
             gh.connect(from, to);
-        }
+        },
+        Some(Command::SetGap(size)) => { gh.pane_settings.gap_size = size },
+        Some(Command::SetConnectionSize(size)) => { gh.pane_settings.connection_size = size },
+        Some(Command::SetGHType) => { 
+            if gh.pane_settings.connection_type == pane::ConnectorType::General {
+                gh.pane_settings.connection_type = pane::ConnectorType::Arrow;
+            } else {
+                gh.pane_settings.connection_type = pane::ConnectorType::General;
+            }
+        },
         None => {
             writeln!(w, "cannot hold this type of command")?;
-        }
+        },
     }
 
     Ok(())
@@ -176,8 +207,10 @@ impl std::fmt::Display for LineGH {
         writeln!(f, "{}", pane.pane())?;
 
         let str_boxes = boxes.iter().map(String::from).collect::<Vec<String>>();
-        let boxed_edges =
-            flatten_line(&str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>());
+        let boxed_edges = flatten_line(
+            &str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>(),
+            self.pane_settings.gap_size
+        );
         write!(f, "{}", boxed_edges)?;
         Ok(())
     }
@@ -237,7 +270,7 @@ impl<'a> std::convert::From<&FormatBox<'a>> for String {
     }
 }
 
-fn flatten_line(src: &[&str]) -> String {
+fn flatten_line(src: &[&str], gap_size: usize) -> String {
     let element_with_max_lines = src
         .iter()
         .max_by(|x, y| x.lines().count().cmp(&y.lines().count()));
@@ -257,7 +290,7 @@ fn flatten_line(src: &[&str]) -> String {
             };
 
             lines.push_str(&line);
-            lines.push(' ');
+            lines.push_str(&" ".repeat(gap_size));
         }
         lines.push('\n');
     }
