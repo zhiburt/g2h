@@ -7,6 +7,7 @@ pub struct ConnectedPane {
     connector: char,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConnectorType {
     General,
     Arrow,

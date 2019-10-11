@@ -96,11 +96,16 @@ fn handle_command<W: Write>(
     Ok(())
 }
 
-#[derive(Debug)]
 struct LineGH {
     // might use here real graph?
     vertices: BTreeMap<usize, Vec<usize>>,
     edges: Vec<String>,
+    pane_settings: PaneSettings,
+}
+
+struct PaneSettings {
+    gap_size: usize,
+    type_connection: pane::ConnectorType,
 }
 
 impl LineGH {
@@ -108,7 +113,18 @@ impl LineGH {
         LineGH {
             edges: Vec::new(),
             vertices: BTreeMap::new(),
+            pane_settings: PaneSettings {
+                gap_size: 1,
+                type_connection: pane::ConnectorType::General,
+            },
         }
+    }
+
+    pub fn new_with_settings(settings: PaneSettings) -> Self {
+        let mut gh = LineGH::new();
+        gh.pane_settings = settings;
+
+        gh
     }
 
     pub fn add_edge(&mut self, edge: &str) -> usize {
@@ -156,7 +172,11 @@ impl std::fmt::Display for LineGH {
             .iter()
             .map(FormatBox::line_lenght)
             .collect::<Vec<usize>>();
-        let mut pane = pane::ConnectedPane::new(&boxes_length, 1, pane::ConnectorType::General);
+        let mut pane = pane::ConnectedPane::new(
+            &boxes_length,
+            self.pane_settings.gap_size,
+            self.pane_settings.type_connection,
+        );
 
         for (node, friends) in &self.vertices {
             for friend in friends {
