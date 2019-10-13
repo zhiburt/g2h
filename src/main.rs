@@ -1,8 +1,10 @@
 use regex::Regex;
 use std::collections::BTreeMap;
+use std::iter::FromIterator;
 use std::io::{self, BufRead, Write};
 
 mod pane;
+use pane::Surface;
 
 fn main() -> io::Result<()> {
     let mut gh = LineGH::new();
@@ -172,7 +174,15 @@ impl LineGH {
             None => 0,
         }
     }
-}
+
+    pub fn structure(&self) -> BTreeMap<usize, (usize, usize)> {
+        BTreeMap::from_iter(
+            self.vertices.keys().cloned().
+                zip(self.vertices.iter().
+                map(|(i, connected)| (connected.len(), self.count_by(*i) - connected.len())))
+        )
+    }
+} 
 
 impl std::fmt::Display for LineGH {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
