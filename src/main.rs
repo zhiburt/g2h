@@ -216,6 +216,10 @@ impl std::fmt::Display for LineGH {
     }
 }
 
+fn new_line(index: usize, count_in: usize, count_out: usize) -> String {
+    format!("{} - in {} out {}", index, count_in, count_out)
+}
+
 struct FormatBox<'a> {
     message: &'a str,
     tab_size: usize,
@@ -230,7 +234,7 @@ impl<'a> FormatBox<'a> {
     }
 
     fn line_lenght(&self) -> usize {
-        2 + self.tab_size * 2 + self.message.len()
+        2 + self.tab_size * 2 + size_biggest_line(&self.message)
     }
 }
 
@@ -239,11 +243,14 @@ impl<'a> std::fmt::Display for FormatBox<'a> {
         let horizontal_tab = " ".repeat(self.tab_size);
         let horizontal_line = "-".repeat(self.line_lenght());
         let vertical_space = format!("|{}|", " ".repeat(self.line_lenght() - 2));
-        let content: String = self
+
+        let max_len = size_biggest_line(&self.message);
+        let content = self
             .message
             .lines()
-            .map(|l| format!("|{}{}{}|", horizontal_tab, l, horizontal_tab))
-            .collect();
+            .map(|l| format!("|{}{: <3$}{}|", horizontal_tab, l, horizontal_tab, max_len))
+            .collect::<Vec<String>>()
+            .join("\n");
 
         let vertical_space_lined = if self.tab_size > 0 {
             format!("{}\n", vertical_space)
