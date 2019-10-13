@@ -13,8 +13,13 @@ impl<'a> StrPane<'a> {
         }
     }
 
+    pub fn size(&self) -> (usize, usize) {
+        (self.line.len(), 1)
+    }
+
     pub fn pane(&self) -> Pane {
-        let mut pane = Pane::new(self.line.len(), 1);
+        let size = self.size();
+        let mut pane = Pane::new(size.0, size.1);
 
         for (i, c) in self.line.chars().enumerate() {
             pane.put(Shape::Point(Point::new(i, 1)), c);
@@ -57,10 +62,16 @@ impl ConnectedPane {
         self.connected_list.sort();
     }
 
-    pub fn pane(&self) -> Pane {
+    pub fn size(&self) -> (usize, usize) {
         let width =
             self.concept.iter().sum::<usize>() + (self.concept.len() - 1) * self.settings.gap_size;
         let hight = self.connected_list.len() * 2;
+
+        (width, hight)
+    }
+
+    pub fn pane(&self) -> Pane {
+        let (width, hight) = self.size();
         let mut pane = Pane::new(width, hight);
         struct LineCoordinate {
             from: Point,
@@ -131,6 +142,10 @@ impl Pane {
             size: (width, hight),
             surface: vec![vec![' '; width]; hight],
         }
+    }
+
+    pub fn size(&self) -> (usize, usize) {
+        self.size
     }
 
     pub fn put(&mut self, shape: Shape, c: char) {
