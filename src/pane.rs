@@ -6,10 +6,15 @@ pub struct StrPane<'a> {
 }
 
 impl<'a> StrPane<'a> {
-    
     pub fn new(s: &'a str) -> Self {
         StrPane {
             line: s,
+        }
+    }
+
+    fn str_pane(pane: &mut Pane, s: &str, row: usize) {
+        for (i, c) in s.chars().enumerate() {
+            pane.put(Shape::Point(Point::new(i, row)), c);
         }
     }
 }
@@ -23,9 +28,7 @@ impl<'a> Surface for StrPane<'a> {
         let size = self.size();
         let mut pane = Pane::new(size.0, size.1);
 
-        for (i, c) in self.line.chars().enumerate() {
-            pane.put(Shape::Point(Point::new(i, 1)), c);
-        }
+        StrPane::str_pane(&mut pane, self.line, 0);
 
         pane
     }
