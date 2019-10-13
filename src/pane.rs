@@ -1,5 +1,29 @@
 use std::collections::BTreeMap;
 
+#[derive(Debug)]
+pub struct StrPane<'a> {
+    line: &'a str,
+}
+
+impl<'a> StrPane<'a> {
+    
+    pub fn new(s: &'a str) -> Self {
+        StrPane {
+            line: s,
+        }
+    }
+
+    pub fn pane(&self) -> Pane {
+        let mut pane = Pane::new(self.line.len(), 1);
+
+        for (i, c) in self.line.chars().enumerate() {
+            pane.put(Shape::Point(Point::new(i, 1)), c);
+        }
+
+        pane
+    }
+}
+
 pub struct ConnectedPane {
     connected_list: Vec<(usize, usize)>,
     concept: Vec<usize>,
