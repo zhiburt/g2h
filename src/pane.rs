@@ -1,6 +1,37 @@
 use std::collections::BTreeMap;
 
-#[derive(Debug)]
+pub struct ColumnFittablePane {
+    panes: Vec<Pane>,
+}
+
+impl Surface for ColumnFittablePane {
+    fn size(&self) -> (usize, usize) {
+        let sizes: Vec<(usize, usize)> = self.panes.iter().map(|l| l.size()).collect();
+
+        let max_width = sizes.iter().map(|(w, _)| w).max().map_or(0, |w| *w);
+        let hight = sizes.iter().map(|(_, h)| *h).sum(); 
+
+        (max_width, hight)
+    }
+
+    fn pane(&self) -> Pane {
+        let size = self.size();
+        let mut pane = Pane::new(size.0, size.1);
+
+        let mut i = 0;
+        for p in &self.panes {
+            let str_pane = p.to_string();
+            for line in str_pane.lines() {
+                StrPane::str_pane(&mut pane, line, i);
+                i += 1;
+            }
+        }
+
+        pane
+    }
+}
+
+#[derive(Debug)] 
 pub struct StrPane<'a> {
     line: &'a str,
 }
