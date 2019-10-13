@@ -12,12 +12,14 @@ impl<'a> StrPane<'a> {
             line: s,
         }
     }
+}
 
-    pub fn size(&self) -> (usize, usize) {
+impl<'a> Surface for StrPane<'a> {
+    fn size(&self) -> (usize, usize) {
         (self.line.len(), 1)
     }
 
-    pub fn pane(&self) -> Pane {
+    fn pane(&self) -> Pane {
         let size = self.size();
         let mut pane = Pane::new(size.0, size.1);
 
@@ -62,7 +64,20 @@ impl ConnectedPane {
         self.connected_list.sort();
     }
 
-    pub fn size(&self) -> (usize, usize) {
+    fn start_element_index(&self, i: usize) -> usize {
+        self.concept.iter().take(i).sum::<usize>() + i * self.settings.gap_size
+    }
+
+    fn connector(ct: ConnectorType) -> char {
+        match ct {
+            ConnectorType::General => '|',
+            ConnectorType::Arrow => 'v',
+        }
+    }
+}
+
+impl Surface for ConnectedPane {
+    fn size(&self) -> (usize, usize) {
         let width =
             self.concept.iter().sum::<usize>() + (self.concept.len() - 1) * self.settings.gap_size;
         let hight = self.connected_list.len() * 2;
@@ -70,7 +85,7 @@ impl ConnectedPane {
         (width, hight)
     }
 
-    pub fn pane(&self) -> Pane {
+    fn pane(&self) -> Pane {
         let (width, hight) = self.size();
         let mut pane = Pane::new(width, hight);
         struct LineCoordinate {
@@ -117,17 +132,11 @@ impl ConnectedPane {
 
         pane
     }
+}
 
-    fn start_element_index(&self, i: usize) -> usize {
-        self.concept.iter().take(i).sum::<usize>() + i * self.settings.gap_size
-    }
-
-    fn connector(ct: ConnectorType) -> char {
-        match ct {
-            ConnectorType::General => '|',
-            ConnectorType::Arrow => 'v',
-        }
-    }
+pub trait Surface {
+    fn size(&self) -> (usize, usize);
+    fn pane(&self) -> Pane;
 }
 
 #[derive(Debug)]
