@@ -4,6 +4,14 @@ pub struct ColumnFittablePane {
     panes: Vec<Pane>,
 }
 
+impl ColumnFittablePane {
+    pub fn new(panes: Vec<Pane>) -> Self {
+        ColumnFittablePane {
+            panes,
+        }
+    }
+}
+
 impl Surface for ColumnFittablePane {
     fn size(&self) -> (usize, usize) {
         let sizes: Vec<(usize, usize)> = self.panes.iter().map(|l| l.size()).collect();
