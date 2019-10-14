@@ -194,8 +194,9 @@ impl std::fmt::Display for LineGH {
             .map(|(i, s)| {
                 let count_connected = self.count_by(i);
                 let single_box = FormatBox::new(s, 1);
-                if count_connected > single_box.line_lenght() * self.pane_settings.connection_size {
-                    FormatBox::new(s, count_connected - s.len())
+                let max_on_line = f64::ceil(single_box.line_lenght() as f64 / self.pane_settings.connection_size as f64) as usize;
+                if count_connected > max_on_line {
+                    FormatBox::new(s, (count_connected - max_on_line) * self.pane_settings.connection_size)
                 } else {
                     single_box
                 }
