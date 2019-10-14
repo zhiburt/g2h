@@ -160,6 +160,7 @@ impl LineGH {
 
     pub fn connect(&mut self, e1: usize, e2: usize) {
         self.vertices.entry(e1).or_insert_with(Vec::new).push(e2);
+        self.vertices.entry(e2).or_insert_with(Vec::new);
     }
 
     pub fn count_by(&self, i: usize) -> usize {
@@ -196,7 +197,7 @@ impl std::fmt::Display for LineGH {
                 let single_box = FormatBox::new(s, 1);
                 let max_on_line = f64::ceil(single_box.line_lenght() as f64 / self.pane_settings.connection_size as f64) as usize;
                 if count_connected > max_on_line {
-                    FormatBox::new(s, (count_connected - max_on_line) * self.pane_settings.connection_size)
+                    FormatBox::new(s, (count_connected - max_on_line) * self.pane_settings.connection_size + 1)
                 } else {
                     single_box
                 }
