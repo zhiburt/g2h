@@ -1,5 +1,36 @@
 use std::collections::BTreeMap;
 
+pub struct MatrixPane {
+    size: (usize, usize),
+    c: String,
+}
+
+impl MatrixPane {
+    pub fn new(wight: usize, hight: usize, c: &str) -> Self {
+        MatrixPane {
+            size: (wight, hight),
+            c: c.to_owned(),
+        }
+    }
+}
+
+impl Surface for MatrixPane {
+    fn size(&self) -> (usize, usize) {
+        return (0,0)
+    }
+
+    fn pane(&self) -> Pane {
+        let mut lines = Vec::new();
+        for i in 0..self.size.1 {
+            let s = vec![self.c.clone(); self.size.0];
+            let line = s.join(" ");
+            lines.push(StrPane::new(&line).pane());
+        }
+
+        ColumnFittablePane::new(lines).pane()
+    }
+}
+
 pub struct ColumnFittablePane {
     panes: Vec<Pane>,
 }
@@ -253,7 +284,7 @@ pub struct Point {
 }
 
 impl Point {
-    fn new(x: usize, y: usize) -> Self {
+    pub fn new(x: usize, y: usize) -> Self {
         Point { x, y }
     }
 }
