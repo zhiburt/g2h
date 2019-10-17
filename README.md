@@ -40,6 +40,8 @@ If you write such commands like this you will get such a type of output.
 
 ## Roadmap
 
+- [ ] Another type of view of graph
+- [ ] Switch between views
 - [ ] Draw verticales below nodes list
 - [x] Support more then len(node_data) connections on node, encrese it's scope
 - [x] A Dinamic setting on space on connection
