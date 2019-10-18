@@ -10,4 +10,5 @@ pub use pane::{
     ConnectorType,
     Shape,
     Surface,
+    MatrixPane,
 };
