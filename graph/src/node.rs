@@ -5,8 +5,8 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 pub struct Node<T> {
     pub data: T,
-    pub parent: Option<Box<Node<T>>>,
-    pub children: Option<Vec<Box<Node<T>>>>,
+    pub parent: Option<Vec<Node<T>>>,
+    pub children: Option<Vec<Node<T>>>,
 }
 
 impl<T> Node<T> {
@@ -24,7 +24,7 @@ impl<T> Node<T> {
         }
         
         // where here move?
-        self.children.as_mut().unwrap().push(Box::new(n));
+        self.children.as_mut().unwrap().push(n);
     }
     
     pub fn is_leaf(&self) -> bool {
@@ -120,26 +120,26 @@ mod tests {
         assert_eq!(tree.count, 1);
     }
     
-    fn example() -> Tree {
+    fn example() -> Tree<&'static str> {
         Tree::new(Node{
-            data: "0".to_string(),
+            data: "0",
             parent: None,
             children: Some(vec![
-                Box::new(Node::new("1".to_string())),
-                Box::new(Node{
-                    data: "1".to_string(),
+                Node::new("1"),
+                Node{
+                    data: "1",
                     parent: None,
                     children: Some(vec![
-                        Box::new(Node{
-                            data: "2".to_string(),
+                        Node{
+                            data: "2",
                             parent: None,
                             children: Some(vec![
-                                Box::new(Node::new("3".to_string())),
-                                Box::new(Node::new("3".to_string())),
+                                Node::new("3"),
+                                Node::new("3"),
                             ]),
-                        }),
+                        },
                     ]),
-                }),
+                },
             ]),
         })
     }
