@@ -1,6 +1,6 @@
 mod node;
 
-pub use node::{Node, Tree};
+pub use node::{Node, Graph};
 
 #[cfg(test)]
 mod tests {
