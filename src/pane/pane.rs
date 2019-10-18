@@ -1,16 +1,53 @@
 use std::collections::BTreeMap;
+use graph::Graph;
 
 pub struct MatrixPane {
-    size: (usize, usize),
+    gh: Graph<String>,
+    pub node_list: NodeList<String>,
     c: String,
+    size: (usize, usize),
 }
+
+type NodeList<T> = Vec<std::rc::Rc<std::cell::RefCell<graph::Node<T>>>>;
 
 impl MatrixPane {
     pub fn new(wight: usize, hight: usize, c: &str) -> Self {
+        let (gh, node_list) = MatrixPane::create_matrix_graph(wight, hight, String::from(c));
         MatrixPane {
             size: (wight, hight),
             c: c.to_owned(),
+            gh,
+            node_list,
         }
+    }
+
+    pub fn create_matrix_graph<T: Clone>(w: usize, h: usize, d: T) -> (Graph<T>, NodeList<T>) {
+        let mut gh = Graph::new();
+        let mut node_list = Vec::new();
+        (0..w*h).for_each(|_| {node_list.push(gh.add_node(d.clone()));});
+
+        for i in 1..w*h {
+            Graph::link(node_list[i-1].clone(), node_list[i].clone(), 10);
+            Graph::link(node_list[i].clone(), node_list[i-1].clone(), 10);
+        }
+
+        for i in 0..(w*h-h) {
+            Graph::link(node_list[i].clone(), node_list[i+h].clone(), 10);
+            Graph::link(node_list[i+h].clone(), node_list[i].clone(), 10);
+        }
+
+        (gh, node_list)
+    }
+
+    pub fn orig_pane(&self) -> Pane {
+        let mut lines = Vec::new();
+        for i in 0..self.size.1 {
+            let s = vec![self.c.clone(); self.size.0];
+            let line = s.join(" ");
+            lines.push(StrPane::new(&line).pane());
+        }
+
+        ColumnFittablePane::new(lines).pane()
     }
 }
 
@@ -21,8 +58,8 @@ impl Surface for MatrixPane {
 
     fn pane(&self) -> Pane {
         let mut lines = Vec::new();
-        for i in 0..self.size.1 {
-            let s = vec![self.c.clone(); self.size.0];
+        for chunk in self.node_list.chunks(self.size.0) {
+            let s = chunk.iter().map(|n| n.borrow().data.clone()).collect::<Vec<String>>();
             let line = s.join(" ");
             lines.push(StrPane::new(&line).pane());
         }
