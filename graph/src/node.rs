@@ -4,18 +4,32 @@ use serde::{Serialize, Deserialize};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub struct Node<T> {
+#[derive(Debug, PartialEq, Eq)]
+pub struct Node<T: Eq + Ord> {
     pub data: T,
     pub edges: Option<Vec<Link<T>>>,
 }
 
-pub struct Link<T> {
+impl<T: Eq + Ord> Ord for Node<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.data.cmp(&other.data)
+    }
+}
+
+impl<T: Eq + Ord> PartialOrd for Node<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Link<T: Eq + Ord> {
     pub weight: usize,
     pub from: Rc<RefCell<Node<T>>>,
     pub to: Rc<RefCell<Node<T>>>,
 }
 
-impl<T> Node<T> {
+impl<T: Eq + Ord> Node<T> {
     pub fn new(s: T) -> Self {
         Node{
             data: s,
@@ -41,12 +55,12 @@ impl<T> Node<T> {
     }
 }
 
-pub struct Graph<T> {
+pub struct Graph<T: Eq + Ord> {
     pub root: Option<Rc<RefCell<Node<T>>>>,
     pub area: Vec<Rc<RefCell<Node<T>>>>,
 }
 
-impl<T> Graph<T> {
+impl<T: Eq + Ord> Graph<T> {
     pub fn new() -> Self {
         Graph{
             root: None,
@@ -56,8 +70,9 @@ impl<T> Graph<T> {
 
     pub fn add_node(&mut self, d: T) -> Rc<RefCell<Node<T>>> {
         let s = Rc::new(RefCell::new(Node::new(d)));
-        self.area.push(s.clone());
+        self.area.push(s);
 
+        let s = self.area.last().unwrap().clone();
         if self.root.is_none() {
             self.root = Some(s.clone());
         }
@@ -65,9 +80,9 @@ impl<T> Graph<T> {
         s
     }
 
-    pub fn link(l: Rc<RefCell<Node<T>>>,r: Rc<RefCell<Node<T>>>, w: usize) {
-        let link = Link{from: l.clone(), to: r.clone(), weight: w};
-        let mut ls = l.borrow_mut();
+    pub fn link(left: Rc<RefCell<Node<T>>>, right: Rc<RefCell<Node<T>>>, w: usize) {
+        let link = Link{from: left.clone(), to: right, weight: w};
+        let mut ls = left.borrow_mut();
         match &mut ls.edges {
             Some(edges) => edges.push(link),
             None => ls.edges = Some(vec![link]),

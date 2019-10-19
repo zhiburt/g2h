@@ -21,7 +21,7 @@ impl MatrixPane {
         }
     }
 
-    pub fn create_matrix_graph<T: Clone>(w: usize, h: usize, d: T) -> (Graph<T>, NodeList<T>) {
+    pub fn create_matrix_graph<T: Clone + Eq + Ord>(w: usize, h: usize, d: T) -> (Graph<T>, NodeList<T>) {
         let mut gh = Graph::new();
         let mut node_list = Vec::new();
         (0..w*h).for_each(|_| {node_list.push(gh.add_node(d.clone()));});

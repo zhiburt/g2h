@@ -1,4 +1,5 @@
 mod node;
+pub mod algorithm;
 
 pub use node::{Node, Graph};
 
