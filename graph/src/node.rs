@@ -3,11 +3,13 @@
 use serde::{Serialize, Deserialize};
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Eq)]
 pub struct Node<T: Eq + Ord> {
     pub data: T,
     pub edges: Option<Vec<Link<T>>>,
+    pub index_in: usize,
 }
 
 impl<T: Eq + Ord> Ord for Node<T> {
@@ -19,6 +21,15 @@ impl<T: Eq + Ord> Ord for Node<T> {
 impl<T: Eq + Ord> PartialOrd for Node<T> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl<T: Eq + Ord> PartialEq for Node<T> {
+    fn eq(&self, other: &Self) -> bool {
+        match self.cmp(&other) {
+            std::cmp::Ordering::Equal => true,
+            _=> false,
+        }
     }
 }
 
@@ -34,6 +45,7 @@ impl<T: Eq + Ord> Node<T> {
         Node{
             data: s,
             edges: None,
+            index_in: 0,
         }
     }
     
@@ -57,27 +69,40 @@ impl<T: Eq + Ord> Node<T> {
 
 pub struct Graph<T: Eq + Ord> {
     pub root: Option<Rc<RefCell<Node<T>>>>,
-    pub area: Vec<Rc<RefCell<Node<T>>>>,
+    pub area: BTreeMap<usize, Rc<RefCell<Node<T>>>>,
+    index: usize,
 }
 
 impl<T: Eq + Ord> Graph<T> {
     pub fn new() -> Self {
         Graph{
             root: None,
-            area: Vec::new(),
+            area: BTreeMap::new(),
+            index: 0,
         }
     }
 
     pub fn add_node(&mut self, d: T) -> Rc<RefCell<Node<T>>> {
-        let s = Rc::new(RefCell::new(Node::new(d)));
-        self.area.push(s);
+        let mut node = Node::new(d);
+        node.index_in = self.index;
 
-        let s = self.area.last().unwrap().clone();
+        let s = Rc::new(RefCell::new(node));
+        self.area.insert(self.index, s.clone());
+
+        self.index += 1;
+
         if self.root.is_none() {
             self.root = Some(s.clone());
         }
 
         s
+    }
+
+    pub fn node_by_index(&self, i: usize) -> Option<Rc<RefCell<Node<T>>>> {
+        match self.area.get(&i) {
+            Some(node) => Some(node.clone()),
+            _ => None,
+        }
     }
 
     pub fn link(left: Rc<RefCell<Node<T>>>, right: Rc<RefCell<Node<T>>>, w: usize) {
