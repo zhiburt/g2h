@@ -27,6 +27,9 @@ impl MatrixPane {
         (0..w*h).for_each(|_| {node_list.push(gh.add_node(d.clone()));});
 
         for i in 1..w*h {
+            if i % h == 0 {
+                continue;
+            }
             Graph::link(node_list[i-1].clone(), node_list[i].clone(), 10);
             Graph::link(node_list[i].clone(), node_list[i-1].clone(), 10);
         }
