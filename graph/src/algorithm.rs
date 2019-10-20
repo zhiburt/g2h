@@ -1,7 +1,7 @@
 use crate::node::{Graph};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Option<BTreeMap<usize,usize>> {
+pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Option<BTreeMap<usize,Option<usize>>> {
     let src = gh.area[&source].borrow();
     if src.edges.is_none(){
         return None;
@@ -13,6 +13,7 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
     let mut dist = BTreeMap::new();
     unchecked.insert(source);
     dist.insert(source, 0);
+    rev.insert(source, None);
 
     while !unchecked.is_empty() {
         let (u, weight) = match dist.iter().filter(|&(e, _)| !checked.contains(e)).min_by(|(_, lw), (_, rw)| lw.cmp(&rw)) {
@@ -36,19 +37,17 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
             let check_node = &child.to.borrow();
             let weight_from_source = child.weight + weight;
 
+            rev.entry(check_node.index_in).or_insert(Some(u));
+
             dist.entry(check_node.index_in).and_modify(|old_weight| {
                 if weight_from_source < *old_weight {
                     *old_weight = weight_from_source;
+
+                    *rev.get_mut(&check_node.index_in).unwrap() = Some(u);
                 }
             }).or_insert(weight_from_source);
 
             unchecked.insert(check_node.index_in);
-
-            if !checked.contains(&check_node.index_in) {
-                rev.entry(check_node.index_in).and_modify(|old| {
-                    *old = u
-                }).or_insert(u);
-            }
         }
 
         checked.insert(u);
