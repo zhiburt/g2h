@@ -138,6 +138,13 @@ impl<T: Eq + Ord> Graph<T> {
         
         (count, deep)
     }
+
+    pub fn for_each<F: FnMut(std::cell::RefMut<Node<T>>)>(&mut self, mut f: F) {
+        for v in self.area.values() {
+            let mut dd = v.borrow_mut();
+            f(dd);
+        }
+    }
 }
 
 #[cfg(test)]
