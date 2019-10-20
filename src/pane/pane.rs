@@ -52,6 +52,11 @@ impl MatrixPane {
 
         ColumnFittablePane::new(lines).pane()
     }
+
+    pub fn clean(&mut self) {
+        let c = self.c.clone();
+        self.gh.for_each(|mut n| n.data = c.clone())
+    }
 }
 
 impl Surface for MatrixPane {
