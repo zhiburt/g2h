@@ -68,7 +68,7 @@ pub fn path(area: &BTreeMap<usize,Option<usize>>, from: usize) -> Option<Vec<usi
         return None;
     }
 
-    let mut path = Vec::new();
+    let mut path = vec![from];
     while let Some(Some(point)) = i {
         path.push(*point);
         i = area.get(&point);
