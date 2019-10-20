@@ -22,6 +22,12 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
         };
         unchecked.remove(&u);
 
+        // what about case where rev.contains(look)?
+        // I get it to be insufficient, since it can be not shortest way.
+        if u == look {
+            return Some(rev);
+        }
+
         let u_node = gh.node_by_index(u).unwrap();
         let u_node = u_node.borrow();
         let edges = match u_node.edges.as_ref() {
