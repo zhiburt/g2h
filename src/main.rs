@@ -1,6 +1,8 @@
 use regex::Regex;
 use std::io::{self, BufRead, Write};
 
+use colored::Colorize;
+
 use g2h::{
     pane::{self, Surface},
     line_gh as gh,
@@ -149,13 +151,13 @@ fn handle_command<W: Write>(
             }
         },
         Some(Command::MatrixInit(w, h)) => {
-            matrix = pane::MatrixPane::new(w, h, "▅");
+            matrix = pane::MatrixPane::new(w, h, &"▅".black().to_string());
         },
         Some(Command::MatrixPrint) => {
             writeln!(w, "{}", matrix.pane())?;
         }
         Some(Command::MatrixSearch(from, look)) => {
-            matrix = path_matrix::construct_path(matrix, from, look, "*", "-");
+            matrix = path_matrix::construct_path(matrix, from, look, &"▅".red().to_string(), &"▅".yellow().to_string());
             writeln!(w, "{}", matrix.pane())?;
             matrix.clean();
         },

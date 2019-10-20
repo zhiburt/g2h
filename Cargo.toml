@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 graph = { path = "graph" }
 regex = "1"
+colored = "*"
