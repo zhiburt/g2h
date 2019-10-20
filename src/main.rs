@@ -2,12 +2,14 @@ use regex::Regex;
 use std::io::{self, BufRead, Write};
 
 use g2h::{
-    pane::{self},
+    pane::{self, Surface},
     line_gh as gh,
+    path_matrix,
 };
 
 fn main() -> io::Result<()> {
     let mut gh = gh::LineGH::new();
+    let mut matrix = pane::MatrixPane::new(0, 0, "");
 
     let command_prefix = b">>> ";
     let stdin = io::stdin();
@@ -31,7 +33,7 @@ fn main() -> io::Result<()> {
 
         for line in lines {
             let command = parse_command(&line);
-            handle_command(&mut stdout.lock(), &mut gh, command)?;
+            matrix = handle_command(&mut stdout.lock(), &mut gh, matrix, command)?;
         }
 
         let len = buffer.len();
@@ -48,6 +50,11 @@ enum Command {
     Structure,
     AddEdge(Box<String>),
     ConnectEdges(usize, usize),
+    MatrixInit(usize, usize),
+    MatrixPrint,
+    MatrixSearch(usize, usize),
+    MatrixSetWeight(usize, usize, usize),
+    MatrixCleanVertices(usize),
 }
 
 fn parse_command(line: &str) -> Option<Command> {
@@ -76,7 +83,26 @@ fn parse_command(line: &str) -> Option<Command> {
         } else {
             None
         }
-    }else {
+    } else if clean_line.starts_with("matrix") {
+        let init_command = Regex::new(r"matrix init (?P<weight>\d+) (?P<hight>\d+)").unwrap();
+        let search_command = Regex::new(r"matrix search (?P<from>\d+) (?P<look>\d+)").unwrap();
+
+        if clean_line.contains("matrix print") {
+            Some(Command::MatrixPrint)
+        } else if init_command.is_match(clean_line) {
+            let caps = init_command.captures(clean_line).unwrap();
+            let w = caps["weight"].parse().unwrap();
+            let h = caps["hight"].parse().unwrap();
+            Some(Command::MatrixInit(w, h))
+        } else if search_command.is_match(clean_line) {
+            let caps = search_command.captures(clean_line).unwrap();
+            let w = caps["from"].parse().unwrap();
+            let h = caps["look"].parse().unwrap();
+            Some(Command::MatrixSearch(w, h))
+        } else {
+            None
+        }
+    } else {
         let add_edge_command = Regex::new(r"edge add (?P<data>.+)").unwrap();
         let add_verticale_command =
             Regex::new(r"edge connect (?P<first>\d+) (?P<second>\d+)").unwrap();
@@ -99,8 +125,9 @@ fn parse_command(line: &str) -> Option<Command> {
 fn handle_command<W: Write>(
     w: &mut W,
     gh: &mut gh::LineGH,
+    mut matrix:  pane::MatrixPane,
     command: Option<Command>,
-) -> io::Result<()> {
+) -> io::Result<pane::MatrixPane> {
     match command {
         Some(Command::Print) => {
             writeln!(w, "{}", gh)?;
@@ -121,10 +148,23 @@ fn handle_command<W: Write>(
                 gh.pane_settings.connection_type = pane::ConnectorType::General;
             }
         },
+        Some(Command::MatrixInit(w, h)) => {
+            matrix = pane::MatrixPane::new(w, h, "▅");
+        },
+        Some(Command::MatrixPrint) => {
+            writeln!(w, "{}", matrix.pane())?;
+        }
+        Some(Command::MatrixSearch(from, look)) => {
+            matrix = path_matrix::construct_path(matrix, from, look, "*", "-");
+            writeln!(w, "{}", matrix.pane())?;
+            matrix.clean();
+        },
+        Some(Command::MatrixCleanVertices(_)) => unimplemented!(),
+        Some(Command::MatrixSetWeight(..)) => unimplemented!(),
         None => {
             writeln!(w, "cannot hold this type of command")?;
         },
     }
 
-    Ok(())
+    Ok(matrix)
 }
