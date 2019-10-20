@@ -61,3 +61,18 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
 
     return Some(rev)
 }
+
+pub fn path(area: &BTreeMap<usize,Option<usize>>, from: usize) -> Option<Vec<usize>> {
+    let mut i = area.get(&from);
+    if i.is_none() {
+        return None;
+    }
+
+    let mut path = Vec::new();
+    while let Some(Some(point)) = i {
+        path.push(*point);
+        i = area.get(&point);
+    }
+            
+    Some(path)
+}
