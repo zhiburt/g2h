@@ -11,10 +11,10 @@ pub struct MatrixPane {
 type NodeList<T> = Vec<std::rc::Rc<std::cell::RefCell<graph::Node<T>>>>;
 
 impl MatrixPane {
-    pub fn new(wight: usize, hight: usize, c: &str) -> Self {
-        let (gh, node_list) = MatrixPane::create_matrix_graph(wight, hight, String::from(c));
+    pub fn new(width: usize, hight: usize, c: &str) -> Self {
+        let (gh, node_list) = MatrixPane::create_matrix_graph(width, hight, String::from(c));
         MatrixPane {
-            size: (wight, hight),
+            size: (width, hight),
             c: c.to_owned(),
             gh,
             node_list,
@@ -27,16 +27,16 @@ impl MatrixPane {
         (0..w*h).for_each(|_| {node_list.push(gh.add_node(d.clone()));});
 
         for i in 1..w*h {
-            if i % h == 0 {
+            if i % w == 0 {
                 continue;
             }
             Graph::link(node_list[i-1].clone(), node_list[i].clone(), 10);
             Graph::link(node_list[i].clone(), node_list[i-1].clone(), 10);
         }
 
-        for i in 0..(w*h-h) {
-            Graph::link(node_list[i].clone(), node_list[i+h].clone(), 10);
-            Graph::link(node_list[i+h].clone(), node_list[i].clone(), 10);
+        for i in 0..(w*h-w) {
+            Graph::link(node_list[i].clone(), node_list[i+w].clone(), 10);
+            Graph::link(node_list[i+w].clone(), node_list[i].clone(), 10);
         }
 
         (gh, node_list)
