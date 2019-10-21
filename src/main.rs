@@ -56,7 +56,7 @@ enum Command {
     MatrixPrint,
     MatrixSearch(usize, usize),
     MatrixSetWeight(usize, usize, usize),
-    MatrixCleanVertices(usize),
+    MatrixBlockVertices(usize),
 }
 
 fn parse_command(line: &str) -> Option<Command> {
@@ -88,6 +88,8 @@ fn parse_command(line: &str) -> Option<Command> {
     } else if clean_line.starts_with("matrix") {
         let init_command = Regex::new(r"matrix init (?P<weight>\d+) (?P<hight>\d+)").unwrap();
         let search_command = Regex::new(r"matrix search (?P<from>\d+) (?P<look>\d+)").unwrap();
+        let set_weight_command = Regex::new(r"matrix weight (?P<index>\d+) (?P<edge>\d+) (?P<weight>\d+)").unwrap();
+        let block_command = Regex::new(r"matrix block (?P<index>\d+)").unwrap();
 
         if clean_line.contains("matrix print") {
             Some(Command::MatrixPrint)
@@ -101,6 +103,16 @@ fn parse_command(line: &str) -> Option<Command> {
             let w = caps["from"].parse().unwrap();
             let h = caps["look"].parse().unwrap();
             Some(Command::MatrixSearch(w, h))
+        } else if set_weight_command.is_match(clean_line) {
+            let caps = set_weight_command.captures(clean_line).unwrap();
+            let index = caps["index"].parse().unwrap();
+            let edge = caps["edge"].parse().unwrap();
+            let weight = caps["weight"].parse().unwrap();
+            Some(Command::MatrixSetWeight(index, edge, weight))
+        } else if block_command.is_match(clean_line) {
+            let caps = block_command.captures(clean_line).unwrap();
+            let index = caps["index"].parse().unwrap();
+            Some(Command::MatrixBlockVertices(index))
         } else {
             None
         }
@@ -161,8 +173,18 @@ fn handle_command<W: Write>(
             writeln!(w, "{}", matrix.pane())?;
             matrix.clean();
         },
-        Some(Command::MatrixCleanVertices(_)) => unimplemented!(),
-        Some(Command::MatrixSetWeight(..)) => unimplemented!(),
+        Some(Command::MatrixBlockVertices(index)) => {
+            if let Some(node) = matrix.gh.node_by_index(index) {
+                node.borrow_mut().edges = None;
+            }
+        },
+        Some(Command::MatrixSetWeight(index, edge_index, weight)) => {
+            if let Some(node) = matrix.gh.node_by_index(index) {
+                if let Some(edges) = node.borrow_mut().edges.as_mut() {
+                    edges[edge_index].weight = weight
+                }
+            }
+        },
         None => {
             writeln!(w, "cannot hold this type of command")?;
         },
