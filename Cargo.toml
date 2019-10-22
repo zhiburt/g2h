@@ -10,3 +10,4 @@ edition = "2018"
 graph = { path = "graph" }
 regex = "1"
 colored = "*"
+termion = "*"

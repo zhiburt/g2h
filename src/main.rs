@@ -7,6 +7,7 @@ use g2h::{
     pane::{self, Surface},
     line_gh as gh,
     path_matrix,
+    animated_path,
 };
 
 fn main() -> io::Result<()> {
@@ -55,6 +56,7 @@ enum Command {
     MatrixInit(usize, usize),
     MatrixPrint,
     MatrixSearch(usize, usize),
+    MatrixSearchAnimated(usize, usize),
     MatrixSetWeight(usize, usize, usize),
     MatrixBlockVertices(usize),
 }
@@ -88,6 +90,7 @@ fn parse_command(line: &str) -> Option<Command> {
     } else if clean_line.starts_with("matrix") {
         let init_command = Regex::new(r"matrix init (?P<weight>\d+) (?P<hight>\d+)").unwrap();
         let search_command = Regex::new(r"matrix search (?P<from>\d+) (?P<look>\d+)").unwrap();
+        let search_animated_command = Regex::new(r"matrix search animated (?P<from>\d+) (?P<look>\d+)").unwrap();
         let set_weight_command = Regex::new(r"matrix weight (?P<index>\d+) (?P<edge>\d+) (?P<weight>\d+)").unwrap();
         let block_command = Regex::new(r"matrix block (?P<index>\d+)").unwrap();
 
@@ -103,6 +106,11 @@ fn parse_command(line: &str) -> Option<Command> {
             let w = caps["from"].parse().unwrap();
             let h = caps["look"].parse().unwrap();
             Some(Command::MatrixSearch(w, h))
+        } else if search_animated_command.is_match(clean_line) {
+            let caps = search_animated_command.captures(clean_line).unwrap();
+            let w = caps["from"].parse().unwrap();
+            let h = caps["look"].parse().unwrap();
+            Some(Command::MatrixSearchAnimated(w, h))
         } else if set_weight_command.is_match(clean_line) {
             let caps = set_weight_command.captures(clean_line).unwrap();
             let index = caps["index"].parse().unwrap();
@@ -171,6 +179,15 @@ fn handle_command<W: Write>(
         Some(Command::MatrixSearch(from, look)) => {
             matrix = path_matrix::construct_path(matrix, from, look, &"▅".red().to_string(), &"▅".yellow().to_string());
             writeln!(w, "{}", matrix.pane())?;
+            matrix.clean();
+        },
+        Some(Command::MatrixSearchAnimated(from, look)) => {
+            let frames = animated_path::frames(&mut matrix, from, look, &"▅".red().to_string(), &"▅".yellow().to_string());
+            for frame in frames {
+                writeln!(w, "{}", termion::clear::BeforeCursor)?;
+                writeln!(w, "{}", frame)?;
+                std::thread::sleep(std::time::Duration::from_millis(20)); // should be a relation from a size of frames or graph?
+            }
             matrix.clean();
         },
         Some(Command::MatrixBlockVertices(index)) => {
