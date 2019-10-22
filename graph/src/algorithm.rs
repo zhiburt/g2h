@@ -2,9 +2,14 @@ use crate::node::{Graph};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Option<BTreeMap<usize,Option<usize>>> {
+    let (_, path) = dijkstra_extra(gh, source, look);
+    path
+}
+
+pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> (Vec<Vec<usize>>, Option<BTreeMap<usize,Option<usize>>>) {
     let src = gh.area[&source].borrow();
     if src.edges.is_none(){
-        return None;
+        return (Vec::new(), None);
     }
 
     let mut rev = BTreeMap::new();
@@ -14,6 +19,8 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
     unchecked.insert(source);
     dist.insert(source, 0);
     rev.insert(source, None);
+
+    let mut iteration_info = Vec::new();
 
     while !unchecked.is_empty() {
         let (u, weight) = match dist.iter().filter(|&(e, _)| !checked.contains(e)).min_by(|(_, lw), (_, rw)| lw.cmp(&rw)) {
@@ -25,8 +32,10 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
         // what about case where rev.contains(look)?
         // I get it to be insufficient, since it can be not shortest way.
         if u == look {
-            return Some(rev);
+            return (iteration_info, Some(rev));
         }
+
+        iteration_info.push(vec![u]);
 
         let u_node = gh.node_by_index(u).unwrap();
         let u_node = u_node.borrow();
@@ -39,7 +48,6 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
         };
 
         for child in edges {
-            
             let check_node = &child.to.borrow();
             let weight_from_source = child.weight + weight;
 
@@ -54,12 +62,14 @@ pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Optio
             }).or_insert(weight_from_source);
 
             unchecked.insert(check_node.index_in);
+
+            iteration_info.last_mut().unwrap().push(check_node.index_in);
         }
 
         checked.insert(u);
     }
 
-    return Some(rev)
+    (iteration_info, Some(rev))
 }
 
 pub fn path(area: &BTreeMap<usize,Option<usize>>, from: usize) -> Option<Vec<usize>> {
