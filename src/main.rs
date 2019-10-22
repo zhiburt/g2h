@@ -174,12 +174,12 @@ fn handle_command<W: Write>(
             matrix.clean();
         },
         Some(Command::MatrixBlockVertices(index)) => {
-            if let Some(node) = matrix.gh.node_by_index(index) {
+            if let Some(node) = matrix.get_node(index) {
                 node.borrow_mut().edges = None;
             }
         },
         Some(Command::MatrixSetWeight(index, edge_index, weight)) => {
-            if let Some(node) = matrix.gh.node_by_index(index) {
+            if let Some(node) = matrix.get_node(index) {
                 if let Some(edges) = node.borrow_mut().edges.as_mut() {
                     edges[edge_index].weight = weight
                 }

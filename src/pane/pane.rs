@@ -57,6 +57,14 @@ impl MatrixPane {
         let c = self.c.clone();
         self.gh.for_each(|mut n| n.data = c.clone())
     }
+
+    pub fn get_node(&mut self, index: usize) -> Option<std::rc::Rc<std::cell::RefCell<graph::Node<String>>>> {
+        self.gh.node_by_index(index)
+    }
+
+    pub fn graph(&self) -> &Graph<String> {
+        &self.gh
+    }
 }
 
 impl Surface for MatrixPane {
