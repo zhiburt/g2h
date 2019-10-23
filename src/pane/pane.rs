@@ -144,7 +144,7 @@ impl<'a> StrPane<'a> {
 
 impl<'a> Surface for StrPane<'a> {
     fn size(&self) -> (usize, usize) {
-        (self.line.len(), 1)
+        (self.line.chars().count(), 1)
     }
 
     fn pane(&self) -> Pane {
