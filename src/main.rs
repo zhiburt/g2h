@@ -2,6 +2,7 @@ use regex::Regex;
 use std::io::{self, BufRead, Write};
 
 use colored::Colorize;
+use rand::Rng;
 
 use g2h::{
     pane::{self, Surface},
@@ -54,6 +55,7 @@ enum Command {
     AddEdge(Box<String>),
     ConnectEdges(usize, usize),
     MatrixInit(usize, usize),
+    RandomMatrixInit(usize, usize),
     MatrixPrint,
     MatrixSearch(usize, usize),
     MatrixSearchAnimated(usize, usize),
@@ -88,11 +90,12 @@ fn parse_command(line: &str) -> Option<Command> {
             None
         }
     } else if clean_line.starts_with("matrix") {
-        let init_command = Regex::new(r"matrix init (?P<weight>\d+) (?P<hight>\d+)").unwrap();
+        let init_command = Regex::new(r"matrix (?P<weight>\d+) (?P<hight>\d+)").unwrap();
         let search_command = Regex::new(r"matrix search (?P<from>\d+) (?P<look>\d+)").unwrap();
         let search_animated_command = Regex::new(r"matrix search animated (?P<from>\d+) (?P<look>\d+)").unwrap();
         let set_weight_command = Regex::new(r"matrix weight (?P<index>\d+) (?P<edge>\d+) (?P<weight>\d+)").unwrap();
         let block_command = Regex::new(r"matrix block (?P<index>\d+)").unwrap();
+        let random_command = Regex::new(r"matrix random (?P<weight>\d+) (?P<hight>\d+)").unwrap();
 
         if clean_line.contains("matrix print") {
             Some(Command::MatrixPrint)
@@ -121,6 +124,11 @@ fn parse_command(line: &str) -> Option<Command> {
             let caps = block_command.captures(clean_line).unwrap();
             let index = caps["index"].parse().unwrap();
             Some(Command::MatrixBlockVertices(index))
+        } else if random_command.is_match(clean_line) {
+            let caps = random_command.captures(clean_line).unwrap();
+            let w = caps["weight"].parse().unwrap();
+            let h = caps["hight"].parse().unwrap();
+            Some(Command::RandomMatrixInit(w, h))
         } else {
             None
         }
@@ -199,6 +207,19 @@ fn handle_command<W: Write>(
             if let Some(node) = matrix.get_node(index) {
                 if let Some(edges) = node.borrow_mut().edges.as_mut() {
                     edges[edge_index].weight = weight
+                }
+            }
+        },
+        Some(Command::RandomMatrixInit(w, h)) => {
+            matrix = pane::MatrixPane::new(w, h, &"▅".black().to_string());
+            for node in &matrix.node_list[..matrix.node_list.len()-1] {
+                if let Some(edges) = node.borrow_mut().edges.as_mut() {
+                    if let Some(edge) = edges.get_mut(0) {
+                        edge.weight = rand::thread_rng().gen_range(0, 100);
+                    }
+                    if let Some(edge) = edges.get_mut(1) {
+                        edge.weight = rand::thread_rng().gen_range(0, 100);
+                    }
                 }
             }
         },
