@@ -11,3 +11,4 @@ graph = { path = "graph" }
 regex = "1"
 colored = "*"
 termion = "*"
+rand = "0.7"
