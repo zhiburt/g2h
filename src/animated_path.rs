@@ -13,7 +13,7 @@ pub fn frames(matrix: &mut MatrixPane, from: usize, look: usize, path_symbol: &s
         frames.push(matrix.pane().to_string());
     }
 
-    for point in &algorithm::path(&path.unwrap(), look).unwrap() {
+    for point in &algorithm::path(&path.unwrap(), look, from).unwrap() {
         matrix.get_node(*point).unwrap().borrow_mut().data = path_symbol.to_owned();
 
         frames.push(matrix.pane().to_string());
