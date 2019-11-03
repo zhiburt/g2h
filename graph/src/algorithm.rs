@@ -1,12 +1,12 @@
-use crate::node::{Graph};
+use crate::node::{Graph, Node};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Option<BTreeMap<usize,Option<usize>>> {
+pub fn dijkstra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> Option<BTreeMap<usize, usize>> {
     let (_, path) = dijkstra_extra(gh, source, look);
     path
 }
 
-pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> (Vec<Vec<usize>>, Option<BTreeMap<usize,Option<usize>>>) {
+pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) -> (Vec<Vec<usize>>, Option<BTreeMap<usize,usize>>) {
     let src = gh.area[&source].borrow();
     if src.edges.is_none(){
         return (Vec::new(), None);
@@ -18,7 +18,6 @@ pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) ->
     let mut dist = BTreeMap::new();
     unchecked.insert(source);
     dist.insert(source, 0);
-    rev.insert(source, None);
 
     let mut iteration_info = Vec::new();
 
@@ -51,13 +50,13 @@ pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) ->
             let check_node = &child.to.borrow();
             let weight_from_source = child.weight + weight;
 
-            rev.entry(check_node.index_in).or_insert(Some(u));
+            rev.entry(check_node.index_in).or_insert(u);
 
             dist.entry(check_node.index_in).and_modify(|old_weight| {
                 if weight_from_source < *old_weight {
                     *old_weight = weight_from_source;
 
-                    *rev.get_mut(&check_node.index_in).unwrap() = Some(u);
+                    *rev.get_mut(&check_node.index_in).unwrap() = u;
                 }
             }).or_insert(weight_from_source);
 
@@ -72,15 +71,19 @@ pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) ->
     (iteration_info, Some(rev))
 }
 
-pub fn path(area: &BTreeMap<usize,Option<usize>>, from: usize) -> Option<Vec<usize>> {
+pub fn path(area: &BTreeMap<usize, usize>, from: usize, to: usize) -> Option<Vec<usize>> {
     let mut i = area.get(&from);
     if i.is_none() {
         return None;
     }
 
     let mut path = vec![from];
-    while let Some(Some(point)) = i {
+    while i.is_some() {
+        let point = i.unwrap();
         path.push(*point);
+        if *point == to {
+            break;
+        }
         i = area.get(&point);
     }
             
