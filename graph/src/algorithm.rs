@@ -71,6 +71,70 @@ pub fn dijkstra_extra<T: Eq + Ord>(gh: &Graph<T>, source: usize, look: usize) ->
     (iteration_info, Some(rev))
 }
 
+pub fn a_star<T: Eq + Ord, H: Fn(usize) -> usize>(gh: &Graph<T>, start: usize, goal: usize, h: H) -> Option<BTreeMap<usize, usize>> {
+    let d = | node: &Node<T>, i: usize | -> usize {
+        node.edges.as_ref().unwrap()[i].weight
+    };
+
+    let mut open_set = BTreeSet::new();
+    open_set.insert(start);
+
+    let mut came_from = BTreeMap::new();
+    
+    let infinity_value = usize::max_value() / 2;
+    let mut g_score = BTreeMap::new();
+    for i in 0 .. gh.area.len() {
+        g_score.insert(i, infinity_value);
+    }
+    g_score.entry(start).and_modify(|s| *s = 0);
+
+    let mut f_score = BTreeMap::new();
+    for i in 0 .. gh.area.len() {
+        f_score.insert(i, infinity_value);
+    }
+    f_score.entry(start).and_modify(|s| *s = h(start));
+
+    while !open_set.is_empty() {
+        let max_in_f_score = f_score.iter().map(|s| (*s.0, *s.1)).max_by(|lhs, rhs| lhs.1.cmp(&rhs.1)).unwrap();
+        let mut min = max_in_f_score.1;
+        let mut current = max_in_f_score.0;
+        for open in &open_set {
+            if f_score[open] <= min {
+                min = f_score[open];
+                current = *open;
+            }
+        }
+
+        if current == goal {
+            return Some(came_from);
+        }
+
+        open_set.remove(&current);
+        let node = gh.node_by_index(current).unwrap();
+        let node = node.borrow();
+        let edges = match node.edges.as_ref() {
+            Some(e) => e,
+            None => continue,
+        };
+
+        for (i, neighbor) in edges.iter().enumerate() {
+            let tentative_g_score =  g_score[&current] + d(&neighbor.from.borrow(), i);
+            let neighbor_index = neighbor.to.borrow().index_in;
+            if tentative_g_score < g_score[&neighbor_index] {
+                came_from.entry(neighbor_index).and_modify(|n| *n = current).or_insert(current);
+                g_score.entry(neighbor_index).and_modify(|s| *s = tentative_g_score);
+                f_score.entry(neighbor_index).and_modify(|s| *s = tentative_g_score + h(neighbor_index));
+                
+                if !open_set.contains(&neighbor_index) {
+                    open_set.insert(neighbor_index);
+                }
+            }
+        }
+    }
+
+    None
+}
+
 pub fn path(area: &BTreeMap<usize, usize>, from: usize, to: usize) -> Option<Vec<usize>> {
     let mut i = area.get(&from);
     if i.is_none() {
