@@ -61,6 +61,7 @@ enum Command {
     MatrixSearchAnimated(usize, usize),
     MatrixSetWeight(usize, usize, usize),
     MatrixBlockVertices(usize),
+    StructureMatrix,
 }
 
 fn parse_command(line: &str) -> Option<Command> {
@@ -96,6 +97,7 @@ fn parse_command(line: &str) -> Option<Command> {
         let set_weight_command = Regex::new(r"matrix weight (?P<index>\d+) (?P<edge>\d+) (?P<weight>\d+)").unwrap();
         let block_command = Regex::new(r"matrix block (?P<index>\d+)").unwrap();
         let random_command = Regex::new(r"matrix random (?P<weight>\d+) (?P<hight>\d+)").unwrap();
+        let structure_command = Regex::new(r"matrix structure").unwrap();
 
         if clean_line.contains("matrix print") {
             Some(Command::MatrixPrint)
@@ -129,6 +131,8 @@ fn parse_command(line: &str) -> Option<Command> {
             let w = caps["weight"].parse().unwrap();
             let h = caps["hight"].parse().unwrap();
             Some(Command::RandomMatrixInit(w, h))
+        }  else if structure_command.is_match(clean_line) {
+            Some(Command::StructureMatrix)
         } else {
             None
         }
@@ -222,6 +226,11 @@ fn handle_command<W: Write>(
                     }
                 }
             }
+        },
+        Some(Command::StructureMatrix) => {
+            let structure = matrix.structure().to_string();
+            let structure = gh::FormatBox::new(&structure, 1);
+            writeln!(w, "{}", structure)?;
         },
         None => {
             writeln!(w, "cannot hold this type of command")?;

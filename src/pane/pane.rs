@@ -65,6 +65,24 @@ impl MatrixPane {
     pub fn graph(&self) -> &Graph<String> {
         &self.gh
     }
+
+    pub fn structure(&self) -> Pane {
+        let mut lines = Vec::new();
+        for (i, node) in self.node_list.iter().enumerate() {
+            let node = node.borrow();
+            let mut weights = Vec::new();
+            if let Some(edges) = &node.edges {
+                for c in edges {
+                    weights.push(format!("{}", c.weight))
+                }
+            }
+
+            let line = format!("{} | {}", i, weights.join(" "));
+            lines.push(StrPane::new(&line).pane())
+        }
+
+        ColumnFittablePane::new(lines).pane()
+    }
 }
 
 impl Surface for MatrixPane {

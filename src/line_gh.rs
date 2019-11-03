@@ -107,13 +107,13 @@ fn new_line(index: usize, count_in: usize, count_out: usize) -> String {
     format!("{} - in {} out {}", index, count_in, count_out)
 }
 
-struct FormatBox<'a> {
+pub struct FormatBox<'a> {
     message: &'a str,
     tab_size: usize,
 }
 
 impl<'a> FormatBox<'a> {
-    fn new(s: &'a str, tab_size: usize) -> Self {
+    pub fn new(s: &'a str, tab_size: usize) -> Self {
         FormatBox {
             message: s,
             tab_size,
