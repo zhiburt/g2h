@@ -53,6 +53,13 @@ impl MatrixPane {
         ColumnFittablePane::new(lines).pane()
     }
 
+    pub fn get_xy(&self, n: usize) -> (usize, usize) {
+        let (w, h) = self.size;
+        let y = n / w;
+        let x = n % w;
+        (x, y)
+    }
+
     pub fn clean(&mut self) {
         let c = self.c.clone();
         self.gh.for_each(|mut n| n.data = c.clone())
