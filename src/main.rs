@@ -57,7 +57,7 @@ enum Command {
     MatrixInit(usize, usize),
     RandomMatrixInit(usize, usize),
     MatrixPrint,
-    MatrixSearch(usize, usize),
+    MatrixSearch(usize, usize, path_matrix::PathFunc),
     MatrixSearchAnimated(usize, usize),
     MatrixSetWeight(usize, usize, usize),
     MatrixBlockVertices(usize),
@@ -92,7 +92,7 @@ fn parse_command(line: &str) -> Option<Command> {
         }
     } else if clean_line.starts_with("matrix") {
         let init_command = Regex::new(r"matrix (?P<weight>\d+) (?P<hight>\d+)").unwrap();
-        let search_command = Regex::new(r"matrix search (?P<from>\d+) (?P<look>\d+)").unwrap();
+        let search_command = Regex::new(r"matrix search (?P<type>[-\w]+) (?P<from>\d+) (?P<look>\d+)").unwrap();
         let search_animated_command = Regex::new(r"matrix search animated (?P<from>\d+) (?P<look>\d+)").unwrap();
         let set_weight_command = Regex::new(r"matrix weight (?P<index>\d+) (?P<edge>\d+) (?P<weight>\d+)").unwrap();
         let block_command = Regex::new(r"matrix block (?P<index>\d+)").unwrap();
@@ -108,9 +108,19 @@ fn parse_command(line: &str) -> Option<Command> {
             Some(Command::MatrixInit(w, h))
         } else if search_command.is_match(clean_line) {
             let caps = search_command.captures(clean_line).unwrap();
+            let path_func = &caps["type"];
             let w = caps["from"].parse().unwrap();
             let h = caps["look"].parse().unwrap();
-            Some(Command::MatrixSearch(w, h))
+
+            let path_func = if path_func  == "djikstra" {
+                path_matrix::PathFunc::Dijkstra
+            } else if path_func == "a-star" {
+                path_matrix::PathFunc::AStar
+            } else {
+                path_matrix::PathFunc::Dijkstra
+            };
+
+            Some(Command::MatrixSearch(w, h, path_func))
         } else if search_animated_command.is_match(clean_line) {
             let caps = search_animated_command.captures(clean_line).unwrap();
             let w = caps["from"].parse().unwrap();
@@ -188,8 +198,8 @@ fn handle_command<W: Write>(
         Some(Command::MatrixPrint) => {
             writeln!(w, "{}", matrix.pane())?;
         }
-        Some(Command::MatrixSearch(from, look)) => {
-            matrix = path_matrix::construct_path(matrix, from, look, &"▅".red().to_string(), &"▅".yellow().to_string());
+        Some(Command::MatrixSearch(from, look, path_func)) => {
+            matrix = path_matrix::construct_path(matrix, from, look, &"▅".red().to_string(), &"▅".yellow().to_string(), path_func);
             writeln!(w, "{}", matrix.pane())?;
             matrix.clean();
         },
