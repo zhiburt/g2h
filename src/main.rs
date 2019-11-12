@@ -196,7 +196,7 @@ fn handle_command<W: Write>(
 
             let colores = graph::algorithm::color_gh(&gh_gh);
             for (i, color) in &colores {
-                gh.change(*i, color_by_index(*color), &"▉".red().to_string());
+                gh.change(*i, color_by_index(*color), &("▉".color(color_by_index(*color)).to_string()));
             }
 
             writeln!(w, "{}", gh)?;
@@ -281,7 +281,7 @@ fn color_by_index(i: usize) -> colored::Color {
     match i {
         0 => colored::Color::Red,
         1 => colored::Color::Blue,
-        2 => colored::Color::BrightRed,
+        2 => colored::Color::Black,
         3 => colored::Color::Green,
         4 => colored::Color::Magenta,
         _ => colored::Color::Black,
