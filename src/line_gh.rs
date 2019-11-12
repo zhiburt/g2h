@@ -44,6 +44,12 @@ impl LineGH {
         element.1 = Some((col, space_symbol.to_owned()));
     }
 
+    pub fn clear(&mut self) {
+        for edge in &mut self.edges {
+            edge.1 = None
+        }
+    }
+
     pub fn count_by(&self, i: usize) -> usize {
         match self.vertices.get(&i) {
             Some(connected_edges) => {
