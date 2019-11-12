@@ -153,3 +153,51 @@ pub fn path(area: &BTreeMap<usize, usize>, from: usize, to: usize) -> Option<Vec
             
     Some(path)
 }
+
+pub fn color_gh<T: Eq + Ord>(gh: &Graph<T>) -> BTreeMap<usize, usize> {
+    let mut vertecs_colors = BTreeMap::new();
+    let index = 0;
+    mark_node(gh, index, &mut vertecs_colors);
+
+    vertecs_colors
+}
+
+fn mark_node<T: Eq + Ord>(gh: &Graph<T>, i: usize, mut colors: &mut BTreeMap<usize, usize>) {
+    let node = gh.node_by_index(i).unwrap();
+    let node = node.borrow();
+    let edges = match node.edges.as_ref() {
+        Some(e) => e,
+        None => {
+            colors.insert(i, 0);
+            return;
+        },
+    };
+
+    let mut neighbors = Vec::new();
+    for neighbor in edges.iter() {
+        neighbors.push(neighbor.to.borrow().index_in);
+    }
+
+    for neighbor in neighbors.iter() {
+        if !colors.contains_key(neighbor) {
+            mark_node(gh, *neighbor, &mut colors);
+        }
+    }
+
+    let mut neighbors_colors = Vec::new();
+    for neighbor in neighbors.iter() {
+        neighbors_colors.push(colors[neighbor]);
+    }
+
+    let mut unused_color = *neighbors_colors.iter().max().unwrap() as isize;
+    let mut min_color = 0;
+    for color in 0 .. unused_color {
+        if !neighbors_colors.contains(&min_color) {
+            unused_color = min_color as isize - 1;
+            break;
+        }
+        min_color += 1;
+    }
+
+    colors.insert(i, (unused_color + 1) as usize);
+}
