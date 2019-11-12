@@ -3,11 +3,12 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use crate::pane::{self, Surface};
+use colored::Colorize;
 
 pub struct LineGH {
     // might use here real graph?
-    vertices: BTreeMap<usize, Vec<usize>>,
-    edges: Vec<String>,
+    pub vertices: BTreeMap<usize, Vec<usize>>,
+    pub edges: Vec<(String, Option<(colored::Color, String)>)>,
     pub pane_settings: pane::PaneSettings,
 }
 
@@ -29,13 +30,18 @@ impl LineGH {
     }
 
     pub fn add_edge(&mut self, edge: &str) -> usize {
-        self.edges.push(String::from(edge));
+        self.edges.push((String::from(edge), None));
         self.edges.len() - 1
     }
 
     pub fn connect(&mut self, e1: usize, e2: usize) {
         self.vertices.entry(e1).or_insert_with(Vec::new).push(e2);
         self.vertices.entry(e2).or_insert_with(Vec::new);
+    }
+
+    pub fn change(&mut self, i: usize, col: colored::Color, space_symbol: &str) {
+        let element = self.edges.get_mut(i).unwrap();               
+        element.1 = Some((col, space_symbol.to_owned()));
     }
 
     pub fn count_by(&self, i: usize) -> usize {
@@ -67,12 +73,21 @@ impl std::fmt::Display for LineGH {
             .edges
             .iter()
             .enumerate()
-            .map(|(i, s)| {
+            .map(|(i, (s, opt))| {
                 let count_connected = self.count_by(i);
-                let single_box = FormatBox::new(s, 1);
+                let single_box = match opt {
+                    Some((color , space_sign)) => {
+                        FormatBox::with_color(s, *color, space_sign, 1)
+                    }
+                    None => FormatBox::new(s, 1)
+                };
                 let max_on_line = f64::ceil(single_box.line_lenght() as f64 / self.pane_settings.connection_size as f64) as usize;
                 if count_connected > max_on_line {
-                    FormatBox::new(s, (count_connected - max_on_line) * self.pane_settings.connection_size + 1)
+                    match opt {
+                        Some((color , space_sign)) => {
+                            FormatBox::with_color(s, *color, space_sign, (count_connected - max_on_line) * self.pane_settings.connection_size + 1)}
+                        None => FormatBox::new(s, (count_connected - max_on_line) * self.pane_settings.connection_size + 1)
+                    }
                 } else {
                     single_box
                 }
@@ -93,9 +108,7 @@ impl std::fmt::Display for LineGH {
 
         writeln!(f, "{}", pane.pane())?;
 
-        let str_boxes = boxes.iter().map(String::from).collect::<Vec<String>>();
-        let boxed_edges = flatten_line(
-            &str_boxes.iter().map(|b| b.as_ref()).collect::<Vec<&str>>(),
+        let boxed_edges = flatten_line(&boxes,
             self.pane_settings.gap_size
         );
         write!(f, "{}", boxed_edges)?;
@@ -109,52 +122,64 @@ fn new_line(index: usize, count_in: usize, count_out: usize) -> String {
 
 pub struct FormatBox<'a> {
     message: &'a str,
+    space_symbol: &'a str,
     tab_size: usize,
+    color: Option<colored::Color>,
 }
 
 impl<'a> FormatBox<'a> {
     pub fn new(s: &'a str, tab_size: usize) -> Self {
         FormatBox {
             message: s,
+            space_symbol: &" ",
             tab_size,
+            color: None,
         }
+    }
+
+    pub fn with_color(s: &'a str, color: colored::Color, space: &'a str, tab_size: usize) -> Self {
+        let mut fbox = FormatBox::new(s, tab_size);
+        fbox.space_symbol = space;
+        fbox.color = Some(color);
+        
+        fbox
     }
 
     fn line_lenght(&self) -> usize {
         2 + self.tab_size * 2 + size_biggest_line(&self.message)
     }
-}
 
-impl<'a> std::fmt::Display for FormatBox<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let horizontal_tab = " ".repeat(self.tab_size);
+    fn create_lines(&self) -> Vec<String> {
+        let horizontal_tab = self.space_symbol.repeat(self.tab_size);
         let horizontal_line = "-".repeat(self.line_lenght());
-        let vertical_space = format!("|{}|", " ".repeat(self.line_lenght() - 2));
-
+        let vertical_space = format!("|{}|", self.space_symbol.repeat(self.line_lenght() - 2));
         let max_len = size_biggest_line(&self.message);
         let content = self
             .message
             .lines()
-            .map(|l| format!("|{}{: <3$}{}|", horizontal_tab, l, horizontal_tab, max_len))
-            .collect::<Vec<String>>()
-            .join("\n");
+            .map(|l| {
+                match self.color {
+                    Some(color) => format!("|{}{: <3$}{}|", horizontal_tab, l.color(color), horizontal_tab, max_len),
+                    None => format!("|{}{: <3$}{}|", horizontal_tab, l, horizontal_tab, max_len)
+                }
+            })
+            .map(|l| l.replace(" ", self.space_symbol))
+            .collect::<Vec<String>>();
 
-        let vertical_space_lined = if self.tab_size > 0 {
-            format!("{}\n", vertical_space)
-        } else {
-            "".to_owned()
-        };
+        let mut lines = Vec::new();
+        lines.push(horizontal_line.clone());
+        lines.push(vertical_space.clone());
+        lines.extend(content);
+        lines.push(vertical_space);
+        lines.push(horizontal_line);
 
-        write!(
-            f,
-            "{}\n\
-             {}\
-             {}\n\
-             {}\
-             {}",
-            horizontal_line, vertical_space_lined, content, vertical_space_lined, horizontal_line
-        )?;
-        Ok(())
+        lines
+    }
+}
+
+impl<'a> std::fmt::Display for FormatBox<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.create_lines().join("\n"))
     }
 }
 
@@ -164,21 +189,23 @@ impl<'a> std::convert::From<&FormatBox<'a>> for String {
     }
 }
 
-fn flatten_line(src: &[&str], gap_size: usize) -> String {
-    let element_with_max_lines = src
+// I can try to create lines Vec<String> field in format box and work with it.
+// or somehow rewrite this method
+fn flatten_line(src: &[FormatBox], gap_size: usize) -> String {
+    let src_lines = src.iter().map(FormatBox::create_lines).collect::<Vec<_>>();
+    let element_with_max_lines = src_lines
         .iter()
-        .max_by(|x, y| x.lines().count().cmp(&y.lines().count()));
+        .max_by(|x, y| x.len().cmp(&y.len()));
     let max_lines = match element_with_max_lines {
-        Some(element) => element.lines().count(),
+        Some(element) => element.len(),
         None => 0,
     };
 
     let mut lines = String::new();
     for line_index in 0..max_lines {
-        for source in src {
-            let element_lines = source.lines().collect::<Vec<&str>>();
-            let max_line_size = size_biggest_line(source);
-            let line = match element_lines.get(line_index) {
+        for source in src_lines.iter() {
+            let max_line_size = source.iter().max_by(|x, y| y.len().cmp(&x.len())).map_or(0, |e| e.len());
+            let line = match source.get(line_index) {
                 Some(line) => format!("{: <1$}", line, max_line_size),
                 None => " ".repeat(max_line_size),
             };

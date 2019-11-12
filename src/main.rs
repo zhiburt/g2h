@@ -11,6 +11,8 @@ use g2h::{
     animated_path,
 };
 
+use graph::Graph;
+
 fn main() -> io::Result<()> {
     let mut gh = gh::LineGH::new();
     let mut matrix = pane::MatrixPane::new(0, 0, "");
@@ -174,6 +176,23 @@ fn handle_command<W: Write>(
 ) -> io::Result<pane::MatrixPane> {
     match command {
         Some(Command::Print) => {
+            let mut gh_gh = Graph::new();
+            let mut graph_nodes = Vec::new();
+            for _ in gh.edges.iter() {
+                graph_nodes.push(gh_gh.add_node(0));
+            }
+
+            for (i, vert) in gh.vertices.iter() {
+                for v in vert { 
+                    Graph::link(graph_nodes[*i].clone(), graph_nodes[*v].clone(), 1);
+                }
+            }
+
+            let colores = graph::algorithm::color_gh(&gh_gh);
+            for (i, color) in &colores {
+                gh.change(*i, color_by_index(*color), &"▉".red().to_string());
+            }
+
             writeln!(w, "{}", gh)?;
         },
         Some(Command::Structure) => {},
@@ -248,4 +267,15 @@ fn handle_command<W: Write>(
     }
 
     Ok(matrix)
+}
+
+fn color_by_index(i: usize) -> colored::Color {
+    match i {
+        0 => colored::Color::Red,
+        1 => colored::Color::Blue,
+        2 => colored::Color::BrightRed,
+        3 => colored::Color::Green,
+        4 => colored::Color::Magenta,
+        _ => colored::Color::Black,
+    }
 }
