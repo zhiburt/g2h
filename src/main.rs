@@ -50,6 +50,7 @@ fn main() -> io::Result<()> {
 #[derive(Debug)]
 enum Command {
     Print,
+    PaintGraph,
     SetGHType,
     SetGap(usize),
     SetConnectionSize(usize),
@@ -68,11 +69,13 @@ enum Command {
 
 fn parse_command(line: &str) -> Option<Command> {
     let clean_line = line.trim();
-
-    if clean_line.starts_with("print") {
+    if clean_line.starts_with("print painted") {
+        Some(Command::PaintGraph)
+    } else if clean_line.starts_with("print") {
         Some(Command::Print)
     } else if clean_line.starts_with("structure") {
         Some(Command::Structure)
+        
     } else if clean_line.starts_with("settings") {
         let gap_regex = Regex::new(r"settings gap edge (?P<size>.+)").unwrap();
         let connection_size_regex = Regex::new(r"settings gap vert (?P<size>.+)").unwrap();
@@ -176,6 +179,9 @@ fn handle_command<W: Write>(
 ) -> io::Result<pane::MatrixPane> {
     match command {
         Some(Command::Print) => {
+            writeln!(w, "{}", gh)?;
+        },
+        Some(Command::PaintGraph) => {
             let mut gh_gh = Graph::new();
             let mut graph_nodes = Vec::new();
             for _ in gh.edges.iter() {
@@ -194,6 +200,8 @@ fn handle_command<W: Write>(
             }
 
             writeln!(w, "{}", gh)?;
+
+            gh.clear();
         },
         Some(Command::Structure) => {},
         Some(Command::AddEdge(data)) => {

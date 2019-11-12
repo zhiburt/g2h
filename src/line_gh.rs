@@ -44,6 +44,12 @@ impl LineGH {
         element.1 = Some((col, space_symbol.to_owned()));
     }
 
+    pub fn clear(&mut self) {
+        for edge in &mut self.edges {
+            edge.1 = None
+        }
+    }
+
     pub fn count_by(&self, i: usize) -> usize {
         match self.vertices.get(&i) {
             Some(connected_edges) => {
@@ -193,13 +199,9 @@ impl<'a> std::convert::From<&FormatBox<'a>> for String {
 // or somehow rewrite this method
 fn flatten_line(src: &[FormatBox], gap_size: usize) -> String {
     let src_lines = src.iter().map(FormatBox::create_lines).collect::<Vec<_>>();
-    let element_with_max_lines = src_lines
+    let max_lines = src_lines
         .iter()
-        .max_by(|x, y| x.len().cmp(&y.len()));
-    let max_lines = match element_with_max_lines {
-        Some(element) => element.len(),
-        None => 0,
-    };
+        .max_by(|x, y| x.len().cmp(&y.len())).map_or(0, |elem| elem.len());
 
     let mut lines = String::new();
     for line_index in 0..max_lines {
