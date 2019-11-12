@@ -11,6 +11,8 @@ use g2h::{
     animated_path,
 };
 
+use graph::Graph;
+
 fn main() -> io::Result<()> {
     let mut gh = gh::LineGH::new();
     let mut matrix = pane::MatrixPane::new(0, 0, "");
@@ -48,6 +50,7 @@ fn main() -> io::Result<()> {
 #[derive(Debug)]
 enum Command {
     Print,
+    PaintGraph,
     SetGHType,
     SetGap(usize),
     SetConnectionSize(usize),
@@ -66,11 +69,13 @@ enum Command {
 
 fn parse_command(line: &str) -> Option<Command> {
     let clean_line = line.trim();
-
-    if clean_line.starts_with("print") {
+    if clean_line.starts_with("print painted") {
+        Some(Command::PaintGraph)
+    } else if clean_line.starts_with("print") {
         Some(Command::Print)
     } else if clean_line.starts_with("structure") {
         Some(Command::Structure)
+        
     } else if clean_line.starts_with("settings") {
         let gap_regex = Regex::new(r"settings gap edge (?P<size>.+)").unwrap();
         let connection_size_regex = Regex::new(r"settings gap vert (?P<size>.+)").unwrap();
@@ -176,6 +181,28 @@ fn handle_command<W: Write>(
         Some(Command::Print) => {
             writeln!(w, "{}", gh)?;
         },
+        Some(Command::PaintGraph) => {
+            let mut gh_gh = Graph::new();
+            let mut graph_nodes = Vec::new();
+            for _ in gh.edges.iter() {
+                graph_nodes.push(gh_gh.add_node(0));
+            }
+
+            for (i, vert) in gh.vertices.iter() {
+                for v in vert { 
+                    Graph::link(graph_nodes[*i].clone(), graph_nodes[*v].clone(), 1);
+                }
+            }
+
+            let colores = graph::algorithm::color_gh(&gh_gh);
+            for (i, color) in &colores {
+                gh.change(*i, color_by_index(*color), &("▉".color(color_by_index(*color)).to_string()));
+            }
+
+            writeln!(w, "{}", gh)?;
+
+            gh.clear();
+        },
         Some(Command::Structure) => {},
         Some(Command::AddEdge(data)) => {
             gh.add_edge(&data);
@@ -248,4 +275,15 @@ fn handle_command<W: Write>(
     }
 
     Ok(matrix)
+}
+
+fn color_by_index(i: usize) -> colored::Color {
+    match i {
+        0 => colored::Color::Red,
+        1 => colored::Color::Blue,
+        2 => colored::Color::Black,
+        3 => colored::Color::Green,
+        4 => colored::Color::Magenta,
+        _ => colored::Color::Black,
+    }
 }
